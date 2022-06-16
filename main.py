@@ -71,7 +71,6 @@ def train(Comm, model, train_data, loss_f, optimizer, epochs):
         epoch_accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
         comm_time = 0
         for batch_idx, (data, target) in enumerate(train_data):
-            print('Rank %d Starting Batch %d' % (rank, batch_idx))
 
             # Optimize model
             loss_value, grads = compute_grad(model, loss_f, data, target)
@@ -85,6 +84,8 @@ def train(Comm, model, train_data, loss_f, optimizer, epochs):
 
             # perform model averaging
             comm_time += Comm.communicate(model)
+
+            print('Rank %d Finished Batch %d With Training Loss %0.4f' % (rank, batch_idx, epoch_loss_avg.result()))
 
         training_losses.append(epoch_loss_avg.result())
         training_accuracies.append(epoch_accuracy.result())
