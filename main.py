@@ -1,7 +1,8 @@
 import tensorflow as tf
 from mpi4py import MPI
 from partition import partition_dataset
-from comm_weights import flatten_weights, unflatten_weights
+from network import Graph
+from communication import DecentralizedSGD
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -13,6 +14,7 @@ def run(rank, size):
     lr = 0.1
     train_bs = 64
     test_bs = 64
+    graph_type = 'fully-connected'
 
     cifar10 = tf.keras.datasets.cifar10
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -39,6 +41,9 @@ def run(rank, size):
         layer_shapes.append(model_weights[i].shape)
         layer_sizes.append(model_weights[i].size)
 
+    Network = Graph(rank, size, MPI.COMM_WORLD, graph_type)
+    Communicator = DecentralizedSGD(rank, size, MPI.COMM_WORLD, Network, layer_shapes, layer_sizes, 0, 1)
+
     # Use adam optimizer (could use SGD)
     optimizer = tf.keras.optimizers.Adam(
         learning_rate=lr,
@@ -51,8 +56,7 @@ def run(rank, size):
 
     MPI.COMM_WORLD.Barrier()
 
-    a = flatten_weights(model_weights)
-    mw = unflatten_weights(a, layer_shapes, layer_sizes)
+    Communicator.communicate(res_model)
 
     # train(res_model, worker_train_data, loss_function, optimizer, epochs)
 
