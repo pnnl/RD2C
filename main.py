@@ -59,15 +59,17 @@ def run(rank, size):
 
     MPI.COMM_WORLD.Barrier()
 
-    # train(res_model, worker_train_data, loss_function, optimizer, epochs)
+    train(Communicator, res_model, worker_train_data, loss_function, optimizer, epochs)
 
 
-def train(model, train_data, loss_f, optimizer, epochs):
+def train(Comm, model, train_data, loss_f, optimizer, epochs):
     training_losses = []
     training_accuracies = []
+    comm_times = []
     for epoch in range(epochs):
         epoch_loss_avg = tf.keras.metrics.Mean()
         epoch_accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
+        comm_time = 0
         for batch_idx, (data, target) in enumerate(train_data):
             print('Rank %d Starting Batch %d' % (rank, batch_idx))
 
@@ -81,8 +83,12 @@ def train(model, train_data, loss_f, optimizer, epochs):
             # Compare predicted label to actual label
             epoch_accuracy.update_state(target, model(data, training=True))
 
+            # perform model averaging
+            comm_time += Comm.communicate(model)
+
         training_losses.append(epoch_loss_avg.result())
         training_accuracies.append(epoch_accuracy.result())
+        comm_times.append(comm_time)
 
         if epoch % 1 == 0:
             print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
@@ -118,9 +124,3 @@ if __name__ == "__main__":
     cpus = tf.config.list_logical_devices('CPU')
 
     run(rank, size)
-
-
-
-
-
-

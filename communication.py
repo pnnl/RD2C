@@ -46,7 +46,7 @@ class DecentralizedSGD:
         # update local models
         self.reset_model(model)
 
-    def averaging(self, model):
+    def average(self, model):
 
         # necessary preprocess
         self.prepare_comm_buffer(model)
@@ -90,7 +90,7 @@ class DecentralizedSGD:
 
             self.comm_iter += 1
             # decentralized averaging according to activated topology
-            comm_time += self.averaging(model)
+            comm_time += self.average(model)
 
             # I2: Number of DSGD Communication Set
             if self.comm_iter % self.i2 == 0:
