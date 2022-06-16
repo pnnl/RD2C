@@ -1,5 +1,6 @@
 import numpy as np
 import time
+from mpi4py import MPI
 from comm_weights import flatten_weights, unflatten_weights
 
 
@@ -31,6 +32,19 @@ class DecentralizedSGD:
         # flatten tensor weights
         self.send_buffer = flatten_weights(model_weights)
         self.recv_buffer = np.zeros_like(self.send_buffer)
+
+    def model_sync(self, model):
+
+        # necessary preprocess
+        self.prepare_comm_buffer(model)
+
+        # perform all-reduce to synchronize initial models across all clients
+        MPI.COMM_WORLD.Allreduce(self.send_buffer, self.recv_buffer, op=MPI.SUM)
+        # divide by total workers to get average model
+        self.recv_buffer = self.recv_buffer / self.size
+
+        # update local models
+        self.reset_model(model)
 
     def averaging(self, model):
 

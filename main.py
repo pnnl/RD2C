@@ -14,7 +14,7 @@ def run(rank, size):
     lr = 0.1
     train_bs = 64
     test_bs = 64
-    graph_type = 'fully-connected'
+    graph_type = 'ring'
 
     cifar10 = tf.keras.datasets.cifar10
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -54,9 +54,10 @@ def run(rank, size):
     # Cross entropy loss
     loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-    MPI.COMM_WORLD.Barrier()
+    # Synchronize all models so that initial models are the same
+    Communicator.model_sync(res_model)
 
-    Communicator.communicate(res_model)
+    MPI.COMM_WORLD.Barrier()
 
     # train(res_model, worker_train_data, loss_function, optimizer, epochs)
 
