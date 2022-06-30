@@ -8,7 +8,7 @@ n_workers = int(os.environ['SLURM_NTASKS'])
 print(n_workers)
 
 # build multi-worker environment from Slurm variables
-cluster_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(port_base=12345)
+cluster_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(jobs=n_workers, port_base=12345)
 
 # use NCCL communication protocol
 implementation = tf.distribute.experimental.CommunicationImplementation.NCCL
