@@ -13,4 +13,4 @@
 # module load openmpi
 # module load cuda/11.1.1
 
-python test.py
+srun python test.py

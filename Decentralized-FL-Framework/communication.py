@@ -45,6 +45,7 @@ class DecentralizedSGD:
 
         # update local models
         self.reset_model(model)
+        return unflatten_weights(self.recv_buffer, self.layer_shapes, self.layer_sizes)
 
     def average(self, model):
 

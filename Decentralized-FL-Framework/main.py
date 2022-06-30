@@ -51,6 +51,13 @@ def run(rank, size):
         beta_2=0.999,
         epsilon=1e-07)
 
+    # gpus = tf.config.list_logical_devices('GPU')
+    # num_gpus = len(gpus)
+    # gpu_id = rank % num_gpus
+    # assigned_gpu = gpus[gpu_id]
+    # with tf.device(assigned_gpu):
+    #   res_model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
+
     # Cross entropy loss
     loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
