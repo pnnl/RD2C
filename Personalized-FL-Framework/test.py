@@ -1,6 +1,12 @@
 import tensorflow as tf
 import os
 
+
+# get total number of workers
+n_workers = int(os.environ['SLURM_NTASKS'])
+
+print(n_workers)
+
 # build multi-worker environment from Slurm variables
 cluster_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(port_base=12345)
 
@@ -11,11 +17,6 @@ communication_options = tf.distribute.experimental.CommunicationOptions(implemen
 # declare distribution strategy
 strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=cluster_resolver,
                                                      communication_options=communication_options)
-
-# get total number of workers
-n_workers = int(os.environ['SLURM_NTASKS'])
-
-print(n_workers)
 
 # IMPORTANT: set reduction to NONE so we can do the reduction afterwards and divide by global batch size
 loss_function = losses_per_batch = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True,

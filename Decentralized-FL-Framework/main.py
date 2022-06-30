@@ -124,4 +124,8 @@ if __name__ == "__main__":
     gpus = tf.config.list_logical_devices('GPU')
     cpus = tf.config.list_logical_devices('CPU')
 
+    # need to get total num of gpus, then perform a mod operation to get each thread assigned to a gpu index, then
+    # for each thread index the gpu list with the given mod index and save that string as its assigned_gpu, finally use
+    # the with tf.device(assigned_gpu): to place model and other values onto the assigned gpu
+
     run(rank, size)
