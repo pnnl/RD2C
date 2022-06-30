@@ -2,7 +2,7 @@
 
 # Lines that begin with #SBATCH specify commands to be used by SLURM for scheduling
 
-#SBATCH -A r2dc
+#SBATCH -A rd2c
 #SBATCH -t 2
 #SBATCH -N 1
 #SBATCH -n 1
