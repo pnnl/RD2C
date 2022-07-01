@@ -5,8 +5,8 @@
 #SBATCH -A rd2c
 #SBATCH -p dl
 #SBATCH -t 40
-#SBATCH -N 2
-#SBATCH -n 6
+#SBATCH -N 1
+#SBATCH -n 3
 # #SBATCH --gres=gpu:4
 #SBATCH --gpus-per-node=2
 #SBATCH -J fed_test
@@ -18,4 +18,4 @@ source /people/born669/venv_fed/bin/activate
 module load gcc
 module load openmpi/4.1.4
 
-mpirun -np 6 python main.py
+mpirun -np 3 python main.py
