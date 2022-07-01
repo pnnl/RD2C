@@ -6,7 +6,7 @@
 #SBATCH -p short
 #SBATCH -t 2
 #SBATCH -N 1
-#SBATCH -n 4
+#SBATCH --tasks_per_node=4
 #SBATCH -J fed_test
 #SBATCH -o test.out
 #SBATCH -e error.log
