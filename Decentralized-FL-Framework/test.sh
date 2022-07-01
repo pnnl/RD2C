@@ -15,6 +15,6 @@ module load python/3.7.0
 module load cuda/11.1
 source born669/venv_fed/bin/activate
 module load gcc
-module load openmpi
+module load openmpi/4.1.4
 
 mpirun -np 6 python main.py
