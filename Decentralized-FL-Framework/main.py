@@ -17,7 +17,7 @@ def run(rank, size):
     graph_type = 'ring'
 
     cifar10 = tf.keras.datasets.cifar10
-    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    (x_train, y_train), _ = cifar10.load_data()
 
     # pre-process training data
     x_train = x_train / 255
@@ -30,8 +30,14 @@ def run(rank, size):
     # test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
     # test_dataset = test_dataset.batch(test_bs)
 
-    # Initialize random ResNet50 model
-    res_model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
+    gpus = tf.config.list_logical_devices('GPU')
+    print(gpus)
+    num_gpus = len(gpus)
+    gpu_id = rank % num_gpus
+    assigned_gpu = gpus[gpu_id]
+    print(assigned_gpu)
+    with tf.device(assigned_gpu):
+        res_model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
 
     # find shape and total elements for each layer of the resnet model
     model_weights = res_model.get_weights()
@@ -50,15 +56,6 @@ def run(rank, size):
         beta_1=0.9,
         beta_2=0.999,
         epsilon=1e-07)
-
-    gpus = tf.config.list_logical_devices('GPU')
-    print(gpus)
-    num_gpus = len(gpus)
-    gpu_id = rank % num_gpus
-    assigned_gpu = gpus[gpu_id]
-    print(assigned_gpu)
-    with tf.device(assigned_gpu):
-        res_model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
 
     # Cross entropy loss
     loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
@@ -129,9 +126,6 @@ if __name__ == "__main__":
 
     rank = MPI.COMM_WORLD.Get_rank()
     size = MPI.COMM_WORLD.Get_size()
-
-    gpus = tf.config.list_logical_devices('GPU')
-    cpus = tf.config.list_logical_devices('CPU')
 
     # need to get total num of gpus, then perform a mod operation to get each thread assigned to a gpu index, then
     # for each thread index the gpu list with the given mod index and save that string as its assigned_gpu, finally use
