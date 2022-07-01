@@ -23,17 +23,17 @@ def run(rank, size):
     print(assigned_gpu)
 
     print(tf.config.list_logical_devices('CPU'))
-    return
 
-    MPI.COMM_WORLD.Barrier()
-
-    with tf.device(assigned_gpu):
-
+    with tf.device('/device:CPU:0'):
         # load cifar10 data
         train_data, _ = load_data()
 
         # partition the dataset
         worker_train_data = partition_dataset(train_data, rank, size, train_bs)
+
+    MPI.COMM_WORLD.Barrier()
+
+    with tf.device(assigned_gpu):
 
         # initialize model
         res_model = tf.keras.applications.resnet18.ResNet18(include_top=False, weights=None)
