@@ -33,7 +33,7 @@ def set_tf_config(resolver, environment=None):
 resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(jobs=jobs)
 set_tf_config(resolver)
 
-strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(cluster_resolver=resolver)
+strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=resolver)
 print('Number of devices to do Multi Worker Mirrored Strategy: {}'.format(strategy.num_replicas_in_sync))
 
 
