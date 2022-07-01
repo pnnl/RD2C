@@ -12,6 +12,7 @@
 
 module purge
 module load python/3.7.0
+source born669/venv_fed/bin/activate
 module load gcc
 module load openmpi
 
