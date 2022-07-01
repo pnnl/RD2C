@@ -12,7 +12,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 def run(rank, size):
     epochs = 1
     lr = 0.1
-    train_bs = 32
+    train_bs = 64
     test_bs = 32
     graph_type = 'ring'
 
@@ -37,11 +37,7 @@ def run(rank, size):
         res_model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
 
         # Use adam optimizer (could use SGD)
-        optimizer = tf.keras.optimizers.Adam(
-            learning_rate=lr,
-            beta_1=0.9,
-            beta_2=0.999,
-            epsilon=1e-07)
+        optimizer = tf.keras.optimizers.SGD(learning_rate=lr)
 
         # Cross entropy loss
         loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
