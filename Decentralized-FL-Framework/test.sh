@@ -6,7 +6,7 @@
 #SBATCH -p dl
 #SBATCH -t 40
 #SBATCH -N 1
-#SBATCH -n 2
+#SBATCH -n 6
 #SBATCH --gres=gpu:2
 #SBATCH -J fed_test
 
@@ -17,4 +17,4 @@ source /people/born669/venv_fed/bin/activate
 module load gcc
 module load openmpi/4.1.4
 
-mpirun -np 2 python main.py
+mpirun -np 6 python main.py
