@@ -5,7 +5,7 @@
 #SBATCH -A rd2c
 #SBATCH -p dl
 #SBATCH -t 40
-#SBATCH -N 1
+#SBATCH -N 2
 #SBATCH -n 4
 #SBATCH --gres=gpu:4
 #SBATCH -J fed_test

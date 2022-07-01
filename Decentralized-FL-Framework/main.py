@@ -17,7 +17,6 @@ def run(rank, size):
     graph_type = 'ring'
 
     gpus = tf.config.list_logical_devices('GPU')
-    print(gpus)
     num_gpus = len(gpus)
     gpu_id = rank % num_gpus
     assigned_gpu = gpus[gpu_id]
