@@ -5,7 +5,10 @@ import json
 
 # get total number of workers
 n_workers = int(os.environ['SLURM_NTASKS'])
-jobs = {'worker': n_workers}
+n_gpus = 1
+
+
+jobs = {'worker': n_gpus}
 print(n_workers)
 
 print("TF version: ", tf.__version__)
