@@ -103,6 +103,8 @@ with strategy.scope():
     # IMPORTANT: set reduction to NONE so we can do the reduction afterwards and divide by global batch size
     loss_function = losses_per_batch = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True,
                                                                             reduction=tf.keras.losses.Reduction.NONE)
+    # optimizer
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
     # spread dataset
     multi_worker_dataset = strategy.distribute_datasets_from_function(
         lambda input_context: dataset_fn(global_batch_size, input_context))
@@ -119,7 +121,7 @@ for epoch in range(epochs):
     total_loss = 0
     for batch in range(num_batches):
         print(batch)
-        total_loss += train_step(iterator)
+        total_loss += train_step(res_model, optimizer, loss_function, train_accuracy, global_batch_size, iterator)
 
     train_loss = total_loss / num_batches
     print('Epoch: %d, accuracy: %f, train_loss: %f.' % (epoch, train_accuracy.result(), train_loss))
