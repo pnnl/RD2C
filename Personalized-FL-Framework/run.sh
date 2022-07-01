@@ -12,6 +12,6 @@
 #SBATCH -o test.out
 #SBATCH -e error.log
 
-module load python/3.7.2
+module load python/3.7.0
 
 srun python test.py
