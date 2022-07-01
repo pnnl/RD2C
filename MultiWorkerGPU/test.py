@@ -114,11 +114,12 @@ with strategy.scope():
 
 print('Starting Training:')
 
-epochs = 15
-iterator = iter(multi_worker_dataset)
-num_batches = 70
+epochs = 10
+# Unsure how to get this value
+num_batches = np.ceil(50000/global_batch_size)
 for epoch in range(epochs):
     total_loss = 0
+    iterator = iter(multi_worker_dataset)
     for batch in range(num_batches):
         total_loss += train_step(res_model, optimizer, loss_function, train_accuracy, global_batch_size, iterator)
 
