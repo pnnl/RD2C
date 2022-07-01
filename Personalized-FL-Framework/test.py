@@ -114,11 +114,11 @@ print('Starting Training:')
 
 epochs = 1
 iterator = iter(multi_worker_dataset)
-num_batches = multi_worker_dataset.cardinality()
-print(num_batches)
+num_batches = 70
 for epoch in range(epochs):
     total_loss = 0
     for batch in range(num_batches):
+        print(batch)
         total_loss += train_step(iterator)
 
     train_loss = total_loss / num_batches
