@@ -16,19 +16,11 @@ def run(rank, size):
     test_bs = 64
     graph_type = 'ring'
 
-    cifar10 = tf.keras.datasets.cifar10
-    (x_train, y_train), _ = cifar10.load_data()
+    # load cifar10 data
+    train_data, _ = load_data()
 
-    # pre-process training data
-    x_train = x_train / 255
-    # train_dataset = tf.data.Dataset.from_tensor_slices((x_train[0:10], y_train[0:10]))
-
-    # worker_train_data = partition_dataset(train_dataset, rank, size, train_bs)
-
-    # send out test data
-    # x_test = x_test / 255
-    # test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
-    # test_dataset = test_dataset.batch(test_bs)
+    # partition the dataset
+    worker_train_data = partition_dataset(train_data, rank, size, train_bs)
 
     gpus = tf.config.list_logical_devices('GPU')
     print(gpus)
@@ -122,6 +114,15 @@ def compute_grad(model, loss_f, inputs, targets):
     with tf.GradientTape() as tape:
         loss_value = compute_loss(model, inputs, targets, loss_f, training_bool=True)
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
+
+
+def load_data():
+  (x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
+  x_train = x_train / np.float32(255)
+  y_train = y_train.astype(np.int64)
+  x_test = x_test / np.float32(255)
+  y_test = y_test.astype(np.int64)
+  return (x_train, y_train), (x_test, y_test)
 
 
 if __name__ == "__main__":
