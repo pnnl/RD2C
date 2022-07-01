@@ -21,9 +21,9 @@ def run(rank, size):
 
     # pre-process training data
     x_train = x_train / 255
-    train_dataset = tf.data.Dataset.from_tensor_slices((x_train[0:10], y_train[0:10]))
+    # train_dataset = tf.data.Dataset.from_tensor_slices((x_train[0:10], y_train[0:10]))
 
-    worker_train_data = partition_dataset(train_dataset, rank, size, train_bs)
+    # worker_train_data = partition_dataset(train_dataset, rank, size, train_bs)
 
     # send out test data
     # x_test = x_test / 255
