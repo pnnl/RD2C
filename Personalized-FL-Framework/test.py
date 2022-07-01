@@ -26,7 +26,7 @@ def set_tf_config(resolver, environment=None):
     os.environ['TF_CONFIG'] = json.dumps(cfg)
 
 
-resolver = tf.distribute.cluster_resolver.SlurmClusterResolver()
+resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(jobs=None)
 set_tf_config(resolver)
 
 strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(cluster_resolver=resolver)
