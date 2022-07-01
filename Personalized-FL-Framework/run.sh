@@ -4,7 +4,7 @@
 
 #SBATCH -A rd2c
 #SBATCH -p dl
-#SBATCH -t 2
+#SBATCH -t 10
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=2
 #SBATCH --gres=gpu:2
@@ -12,6 +12,7 @@
 #SBATCH -o test.out
 #SBATCH -e error.log
 
+module load cuda
 module load python/3.7.0
 
 srun python test.py
