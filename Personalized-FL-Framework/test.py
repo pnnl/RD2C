@@ -5,7 +5,7 @@ import json
 
 # get total number of workers
 n_workers = int(os.environ['SLURM_NTASKS'])
-
+jobs = {'worker': n_workers}
 print(n_workers)
 
 print("TF version: ", tf.__version__)
@@ -26,7 +26,7 @@ def set_tf_config(resolver, environment=None):
     os.environ['TF_CONFIG'] = json.dumps(cfg)
 
 
-resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(jobs=None)
+resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(jobs=jobs)
 set_tf_config(resolver)
 
 strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy(cluster_resolver=resolver)

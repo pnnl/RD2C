@@ -11,7 +11,6 @@
 #SBATCH -o test.out
 #SBATCH -e error.log
 
-# module load openmpi
-# module load cuda/11.1.1
+module load python/3.7.2
 
 srun python test.py
