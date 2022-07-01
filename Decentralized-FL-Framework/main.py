@@ -52,10 +52,10 @@ def run(rank, size):
         epsilon=1e-07)
 
     gpus = tf.config.list_logical_devices('GPU')
+    print(gpus)
     num_gpus = len(gpus)
     gpu_id = rank % num_gpus
     assigned_gpu = gpus[gpu_id]
-    print(gpus)
     print(assigned_gpu)
     with tf.device(assigned_gpu):
         res_model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
