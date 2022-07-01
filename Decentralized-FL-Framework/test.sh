@@ -8,6 +8,7 @@
 #SBATCH -N 1
 #SBATCH -n 6
 #SBATCH --gres=gpu:2
+#SBATCH --mem-per-cpu=4GB
 #SBATCH -J fed_test
 
 module purge
