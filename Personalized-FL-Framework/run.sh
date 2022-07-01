@@ -9,7 +9,7 @@
 #SBATCH --ntasks-per-node=2
 #SBATCH --gres=gpu:2
 #SBATCH -J fed_test
-#SBATCH -o test.out
+#SBATCH -o results.out
 #SBATCH -e error.log
 
 module load cuda

@@ -114,7 +114,8 @@ print('Starting Training:')
 
 epochs = 1
 iterator = iter(multi_worker_dataset)
-num_batches = len(multi_worker_dataset)
+num_batches = multi_worker_dataset.cardinality()
+print(num_batches)
 for epoch in range(epochs):
     total_loss = 0
     for batch in range(num_batches):
