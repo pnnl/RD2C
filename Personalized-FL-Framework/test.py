@@ -5,7 +5,7 @@ import json
 
 # get total number of workers
 n_workers = int(os.environ['SLURM_NTASKS'])
-n_gpus = 1
+n_gpus = 0
 
 
 jobs = {'worker': n_gpus}
