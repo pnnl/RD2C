@@ -33,10 +33,18 @@ def run(rank, size):
         # partition the dataset
         worker_train_data = partition_dataset(train_data, rank, size, train_bs)
 
-    return
-
-    with tf.device(assigned_gpu):
+        # initialize model
         res_model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
+
+        # find shape and total elements for each layer of the resnet model
+        model_weights = res_model.get_weights()
+        layer_shapes = []
+        layer_sizes = []
+        for i in range(len(model_weights)):
+            layer_shapes.append(model_weights[i].shape)
+            layer_sizes.append(model_weights[i].size)
+
+    return
 
     # find shape and total elements for each layer of the resnet model
     model_weights = res_model.get_weights()
