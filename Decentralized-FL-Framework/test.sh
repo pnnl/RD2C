@@ -13,7 +13,7 @@
 module purge
 module load python/3.7.0
 module load cuda/11.1
-source born669/venv_fed/bin/activate
+source /people/born669/venv_fed/bin/activate
 module load gcc
 module load openmpi/4.1.4
 
