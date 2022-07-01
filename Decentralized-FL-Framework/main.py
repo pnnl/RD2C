@@ -66,7 +66,8 @@ def run(rank, size):
         print('Starting Training!')
     MPI.COMM_WORLD.Barrier()
 
-    train(Communicator, res_model, worker_train_data, loss_function, optimizer, epochs)
+    with tf.device(assigned_gpu):
+        train(Communicator, res_model, worker_train_data, loss_function, optimizer, epochs)
 
 
 def train(Comm, model, train_data, loss_f, optimizer, epochs):
