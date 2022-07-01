@@ -17,4 +17,4 @@ source /people/born669/venv_fed/bin/activate
 module load gcc
 module load openmpi/4.1.4
 
-mpirun -np 6 python main.py
+mpirun -np 4 python main.py
