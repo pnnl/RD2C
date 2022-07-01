@@ -7,7 +7,7 @@
 #SBATCH -t 2
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=2
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:2
 #SBATCH -J fed_test
 #SBATCH -o test.out
 #SBATCH -e error.log
