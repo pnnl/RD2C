@@ -6,8 +6,8 @@
 #SBATCH -p dl
 #SBATCH -t 40
 #SBATCH -N 1
-#SBATCH -n 8
-#SBATCH --gres=gpu:3
+#SBATCH -n 6
+#SBATCH --gres=gpu:2
 #SBATCH -J fed_test
 
 module purge
@@ -15,4 +15,4 @@ module load python/3.7.0
 module load gcc
 module load openmpi
 
-mpirun -np 8 python main.py
+mpirun -np 6 python main.py
