@@ -12,8 +12,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 def run(rank, size):
     epochs = 1
     lr = 0.1
-    train_bs = 64
-    test_bs = 64
+    train_bs = 32
+    test_bs = 32
     graph_type = 'ring'
 
     gpus = tf.config.list_logical_devices('GPU')
@@ -62,8 +62,9 @@ def run(rank, size):
         # Synchronize all models so that initial models are the same
         Communicator.model_sync(res_model)
 
+    if rank == 0:
+        print('Starting Training!')
     MPI.COMM_WORLD.Barrier()
-    return
 
     train(Communicator, res_model, worker_train_data, loss_function, optimizer, epochs)
 
@@ -88,8 +89,9 @@ def train(Comm, model, train_data, loss_f, optimizer, epochs):
             # Compare predicted label to actual label
             epoch_accuracy.update_state(target, model(data, training=True))
 
-            # perform model averaging
-            comm_time += Comm.communicate(model)
+            with tf.device('/device:CPU:0'):
+                # perform model averaging
+                comm_time += Comm.communicate(model)
 
             print('Rank %d Finished Batch %d With Training Loss %0.4f' % (rank, batch_idx, epoch_loss_avg.result()))
 
