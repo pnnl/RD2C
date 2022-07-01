@@ -12,7 +12,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 def run(rank, size):
     epochs = 1
     lr = 0.1
-    train_bs = 64
+    train_bs = 16
     test_bs = 32
     graph_type = 'ring'
 
