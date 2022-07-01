@@ -6,7 +6,7 @@
 #SBATCH -p dl
 #SBATCH -t 40
 #SBATCH -N 1
-#SBATCH -n 6
+#SBATCH -n 2
 #SBATCH --gres=gpu:2
 #SBATCH -J fed_test
 

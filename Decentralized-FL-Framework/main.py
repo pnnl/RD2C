@@ -122,7 +122,9 @@ def load_data():
   y_train = y_train.astype(np.int64)
   x_test = x_test / np.float32(255)
   y_test = y_test.astype(np.int64)
-  return (x_train, y_train), (x_test, y_test)
+  train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(50000)
+  test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test)).shuffle(10000)
+  return train_dataset, test_dataset
 
 
 if __name__ == "__main__":
