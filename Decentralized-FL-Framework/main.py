@@ -16,18 +16,23 @@ def run(rank, size):
     test_bs = 64
     graph_type = 'ring'
 
-    # load cifar10 data
-    train_data, _ = load_data()
-
-    # partition the dataset
-    worker_train_data = partition_dataset(train_data, rank, size, train_bs)
-
     gpus = tf.config.list_logical_devices('GPU')
     print(gpus)
     num_gpus = len(gpus)
     gpu_id = rank % num_gpus
     assigned_gpu = gpus[gpu_id]
     print(assigned_gpu)
+
+    MPI.COMM_WORLD.Barrier()
+
+    with tf.device(assigned_gpu):
+
+        # load cifar10 data
+        train_data, _ = load_data()
+
+        # partition the dataset
+        worker_train_data = partition_dataset(train_data, rank, size, train_bs)
+
     return
 
     with tf.device(assigned_gpu):
