@@ -17,11 +17,13 @@ def run(rank, size):
     graph_type = 'ring'
 
     gpus = tf.config.list_logical_devices('GPU')
-    print(tf.config.list_logical_devices('CPU'))
     num_gpus = len(gpus)
     gpu_id = rank % num_gpus
     assigned_gpu = gpus[gpu_id]
     print(assigned_gpu)
+
+    print(tf.config.list_logical_devices('CPU'))
+    return
 
     MPI.COMM_WORLD.Barrier()
 
