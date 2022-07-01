@@ -7,7 +7,7 @@
 #SBATCH -t 40
 #SBATCH -N 1
 #SBATCH -n 4
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:4
 #SBATCH -J fed_test
 
 module purge
