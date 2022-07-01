@@ -21,7 +21,7 @@ def run(rank, size):
 
     # pre-process training data
     x_train = x_train / 255
-    train_dataset = tf.data.Dataset.from_tensor_slices((x_train[0:1000], y_train[0:1000]))
+    train_dataset = tf.data.Dataset.from_tensor_slices((x_train[0:10], y_train[0:10]))
 
     worker_train_data = partition_dataset(train_dataset, rank, size, train_bs)
 
@@ -36,6 +36,8 @@ def run(rank, size):
     gpu_id = rank % num_gpus
     assigned_gpu = gpus[gpu_id]
     print(assigned_gpu)
+    return
+
     with tf.device(assigned_gpu):
         res_model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
 
