@@ -14,8 +14,8 @@ n_workers = int(os.environ['SLURM_NTASKS'])
 jobs = {'worker': n_workers}
 
 # Print setup values
-print(n_workers)
-print("TF version: ", tf.__version__)
+# print(n_workers)
+# print("TF version: ", tf.__version__)
 
 
 def set_tf_config(resolver, environment=None):
@@ -114,7 +114,7 @@ with strategy.scope():
 
 print('Starting Training:')
 
-epochs = 20
+epochs = 15
 iterator = iter(multi_worker_dataset)
 num_batches = 70
 for epoch in range(epochs):

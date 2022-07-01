@@ -4,7 +4,7 @@
 
 #SBATCH -A rd2c
 #SBATCH -p dl
-#SBATCH -t 10
+#SBATCH -t 40
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=2
 #SBATCH --gres=gpu:2
