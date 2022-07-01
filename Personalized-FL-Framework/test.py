@@ -114,13 +114,12 @@ with strategy.scope():
 
 print('Starting Training:')
 
-epochs = 1
+epochs = 20
 iterator = iter(multi_worker_dataset)
 num_batches = 70
 for epoch in range(epochs):
     total_loss = 0
     for batch in range(num_batches):
-        print(batch)
         total_loss += train_step(res_model, optimizer, loss_function, train_accuracy, global_batch_size, iterator)
 
     train_loss = total_loss / num_batches
