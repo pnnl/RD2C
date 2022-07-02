@@ -14,11 +14,41 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 
 def run(rank, size):
-    epochs = 20
+    epochs = 3
     lr = 0.1
     train_bs = 64
     graph_type = 'ring'
 
+    inputs = tf.keras.Input(shape=(784,), name="digits")
+    x = tf.keras.layers.Dense(64, activation="relu", name="dense_1")(inputs)
+    x = tf.keras.layers.Dense(64, activation="relu", name="dense_2")(x)
+    outputs = tf.keras.layers.Dense(10, name="predictions")(x)
+    model = tf.keras.Model(inputs=inputs, outputs=outputs)
+
+    # Instantiate an optimizer.
+    optimizer = tf.keras.optimizers.SGD(learning_rate=1e-3)
+    # Instantiate a loss function.
+    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+
+    # Prepare the metrics.
+    acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
+    loss_metric = tf.keras.metrics.Mean()
+
+    # Prepare the training dataset.
+    batch_size = 64
+    (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+    x_train, x_test = x_train / 255.0, x_test / 255.0
+    x_train = np.reshape(x_train, (-1, 784))
+
+    x_train = x_train[:-10000]
+    y_train = y_train[:-10000]
+
+    # Prepare the training dataset.
+    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+    train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
+    train(model, train_dataset, loss_fn, optimizer, acc_metric, loss_metric, epochs)
+
+    """
     gpus = tf.config.list_logical_devices('GPU')
     num_gpus = len(gpus)
     gpu_id = rank % num_gpus
@@ -50,6 +80,7 @@ def run(rank, size):
 
     with tf.device(assigned_gpu):
         train(model, worker_train_data, loss_function, optimizer, acc_metric, loss_metric, epochs)
+    """
 
 
 def train(model, train_data, loss_f, optimizer, epoch_accuracy, epoch_loss_avg, epochs):
