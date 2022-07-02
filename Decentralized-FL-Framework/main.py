@@ -22,16 +22,6 @@ def run(rank, size):
     num_gpus = len(gpus)
     gpu_id = rank % num_gpus
     assigned_gpu = gpus[gpu_id]
-    print(assigned_gpu)
-
-    with tf.device('/device:CPU:0'):
-        # load cifar10 data
-        train_data, _ = load_data()
-
-        # partition the dataset
-        worker_train_data = partition_dataset(train_data, rank, size, train_bs)
-
-    MPI.COMM_WORLD.Barrier()
 
     with tf.device(assigned_gpu):
 
@@ -60,6 +50,12 @@ def run(rank, size):
         acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
 
     with tf.device('/device:CPU:0'):
+
+        # load cifar10 data
+        train_data, _ = load_data()
+
+        # partition the dataset
+        worker_train_data = partition_dataset(train_data, rank, size, train_bs)
 
         # find shape and total elements for each layer of the resnet model
         model_weights = model.get_weights()
