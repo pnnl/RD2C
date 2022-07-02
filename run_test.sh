@@ -9,6 +9,7 @@
 
 module purge
 module load python/3.7.0
+module load cuda/11.1
 source /people/born669/venv_fed/bin/activate
 
 srun python tensorflow_test.py
