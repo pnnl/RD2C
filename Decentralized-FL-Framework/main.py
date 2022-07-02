@@ -102,7 +102,7 @@ def train(Comm, model, train_data, loss_f, optimizer, epochs):
         comm_times.append(comm_time)
 
         if epoch % 1 == 0:
-            print("Epoch {:%d}: Loss: {:%.3f}, Accuracy: {:%.3f}".format(epoch,
+            print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
                                                                         epoch_loss_avg.result(),
                                                                         epoch_accuracy.result()))
 
