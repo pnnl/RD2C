@@ -74,9 +74,9 @@ def train(Comm, model, train_data, loss_f, optimizer, epochs):
     training_losses = []
     training_accuracies = []
     comm_times = []
+    epoch_loss_avg = tf.keras.metrics.Mean()
+    epoch_accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
     for epoch in range(epochs):
-        epoch_loss_avg = tf.keras.metrics.Mean()
-        epoch_accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
         comm_time = 0
         for batch_idx, (data, target) in enumerate(train_data):
 
@@ -105,6 +105,9 @@ def train(Comm, model, train_data, loss_f, optimizer, epochs):
             print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
                                                                         epoch_loss_avg.result(),
                                                                         epoch_accuracy.result()))
+
+        epoch_loss_avg.reset_state()
+        epoch_accuracy.reset_state()
 
     return training_accuracies, training_losses
 
