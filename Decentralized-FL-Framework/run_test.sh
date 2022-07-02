@@ -8,7 +8,7 @@
 #SBATCH -N 1
 #SBATCH -n 4
 # #SBATCH --gres=gpu:4
-#SBATCH --gpus-per-node=1
+#SBATCH --gpus-per-node=2
 #SBATCH -J fed_test
 
 module purge
@@ -18,4 +18,4 @@ source /people/born669/venv_fed/bin/activate
 module load gcc
 module load openmpi/4.1.4
 
-mpirun -np 1 python test.py
+mpirun -np 4 python test.py
