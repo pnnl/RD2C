@@ -97,7 +97,7 @@ def train(model, train_data, loss_f, optimizer, epoch_accuracy, epoch_loss_avg, 
     for epoch in range(epochs):
         comm_time = 0
         for batch_idx, (data, target) in enumerate(train_data):
-
+            print(data.shape)
             # Optimize model
             # loss_value, grads = compute_grad(model, loss_f, data, target)
             with tf.GradientTape() as tape:
