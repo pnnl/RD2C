@@ -19,11 +19,13 @@ def run(rank, size):
     train_bs = 64
     graph_type = 'ring'
 
-    inputs = tf.keras.Input(shape=(784,), name="digits")
-    x = tf.keras.layers.Dense(64, activation="relu", name="dense_1")(inputs)
-    x = tf.keras.layers.Dense(64, activation="relu", name="dense_2")(x)
-    outputs = tf.keras.layers.Dense(10, name="predictions")(x)
-    model = tf.keras.Model(inputs=inputs, outputs=outputs)
+    # inputs = tf.keras.Input(shape=(784,), name="digits")
+    # x = tf.keras.layers.Dense(64, activation="relu", name="dense_1")(inputs)
+    # x = tf.keras.layers.Dense(64, activation="relu", name="dense_2")(x)
+    # outputs = tf.keras.layers.Dense(10, name="predictions")(x)
+    # model = tf.keras.Model(inputs=inputs, outputs=outputs)
+
+    model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
 
     # Instantiate an optimizer.
     optimizer = tf.keras.optimizers.SGD(learning_rate=1e-3)
@@ -46,6 +48,9 @@ def run(rank, size):
     # Prepare the training dataset.
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
+
+    train_dataset, test_dataset = load_data()
+
     train(model, train_dataset, loss_fn, optimizer, acc_metric, loss_metric, epochs)
 
     """
@@ -137,14 +142,14 @@ def compute_grad(model, loss_f, inputs, targets):
         loss_value = compute_loss(model, inputs, targets, loss_f, training_bool=True)
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
-
+# REMOVE -10000 AFTER DEBUGGING
 def load_data():
   (x_train, y_train), (x_test, y_test) = tf.keras.datasets.cifar10.load_data()
-  x_train = x_train / np.float32(255)
-  y_train = y_train.astype(np.int64)
+  x_train = x_train[:-10000] / np.float32(255)
+  y_train = y_train[:-10000].astype(np.int64)
   x_test = x_test / np.float32(255)
   y_test = y_test.astype(np.int64)
-  train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(50000)
+  train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(10000) #change back to 50000
   test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test)).shuffle(10000)
   return train_dataset, test_dataset
 
