@@ -34,7 +34,8 @@ def run(rank, size):
     with tf.device(assigned_gpu):
 
         # initialize model
-        res_model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
+        # model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
+        model = tf.keras.applications.MobileNetV3Large(include_top=False, weights=None)
 
         # Use adam optimizer (could use SGD)
         optimizer = tf.keras.optimizers.SGD(learning_rate=lr)
@@ -45,7 +46,7 @@ def run(rank, size):
     with tf.device('/device:CPU:0'):
 
         # find shape and total elements for each layer of the resnet model
-        model_weights = res_model.get_weights()
+        model_weights = model.get_weights()
         layer_shapes = []
         layer_sizes = []
         for i in range(len(model_weights)):
@@ -56,14 +57,14 @@ def run(rank, size):
         Communicator = DecentralizedSGD(rank, size, MPI.COMM_WORLD, Network, layer_shapes, layer_sizes, 0, 1)
 
         # Synchronize all models so that initial models are the same
-        Communicator.model_sync(res_model)
+        Communicator.model_sync(model)
 
     if rank == 0:
         print('Starting Training!')
     MPI.COMM_WORLD.Barrier()
 
     with tf.device(assigned_gpu):
-        train(Communicator, res_model, worker_train_data, loss_function, optimizer, epochs)
+        train(Communicator, model, worker_train_data, loss_function, optimizer, epochs)
 
 
 def train(Comm, model, train_data, loss_f, optimizer, epochs):
