@@ -4,7 +4,6 @@ from partition import partition_dataset
 from network import Graph
 from communication import DecentralizedSGD
 import numpy as np
-import matplotlib.pyplot as plt
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # these work to remove DNN library error
@@ -106,9 +105,9 @@ def train(Comm, model, train_data, loss_f, optimizer, epoch_accuracy, epoch_loss
             # Compare predicted label to actual label
             epoch_accuracy.update_state(target, y_p)
 
-            # with tf.device('/device:CPU:0'):
+            with tf.device('/device:CPU:0'):
                 # perform model averaging
-            #    comm_time += Comm.communicate(model)
+                comm_time += Comm.communicate(model)
 
             if batch_idx % 50 == 0:
                 print('Rank %d Finished Batch %d With Training Loss %0.4f' % (rank, batch_idx, epoch_loss_avg.result()))
@@ -154,9 +153,4 @@ if __name__ == "__main__":
 
     rank = MPI.COMM_WORLD.Get_rank()
     size = MPI.COMM_WORLD.Get_size()
-
-    # need to get total num of gpus, then perform a mod operation to get each thread assigned to a gpu index, then
-    # for each thread index the gpu list with the given mod index and save that string as its assigned_gpu, finally use
-    # the with tf.device(assigned_gpu): to place model and other values onto the assigned gpu
-
     run(rank, size)
