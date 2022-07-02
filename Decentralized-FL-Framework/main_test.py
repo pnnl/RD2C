@@ -14,7 +14,7 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 
 def run(rank, size):
-    epochs = 20
+    epochs = 10
     lr = 0.1
     train_bs = 64
     graph_type = 'ring'

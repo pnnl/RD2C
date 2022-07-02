@@ -38,10 +38,20 @@ def run(rank, size):
 
         # initialize model
         # model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
-        model = tf.keras.applications.MobileNetV3Large(include_top=False, weights=None)
+        # model = tf.keras.applications.MobileNetV3Large(include_top=False, weights=None)
+        model = tf.keras.models.Sequential()
+        model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+        model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+        model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
+        model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+        model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
+        model.add(tf.keras.layers.Flatten())
+        model.add(tf.keras.layers.Dense(64, activation='relu'))
+        model.add(tf.keras.layers.Dense(10))
 
         # Use adam optimizer (could use SGD)
-        optimizer = tf.keras.optimizers.SGD(learning_rate=lr, momentum=0.9, nesterov=True)
+        # optimizer = tf.keras.optimizers.SGD(learning_rate=lr, momentum=0.9, nesterov=True)
+        optimizer = tf.keras.optimizers.SGD(learning_rate=lr)
 
         # Cross entropy loss
         loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
