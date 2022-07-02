@@ -19,22 +19,17 @@ def run(rank, size):
     train_bs = 64
     graph_type = 'ring'
 
-    # inputs = tf.keras.Input(shape=(784,), name="digits")
-    # x = tf.keras.layers.Dense(64, activation="relu", name="dense_1")(inputs)
-    # x = tf.keras.layers.Dense(64, activation="relu", name="dense_2")(x)
-    # outputs = tf.keras.layers.Dense(10, name="predictions")(x)
-    # model = tf.keras.Model(inputs=inputs, outputs=outputs)
+    #model = tf.keras.models.Sequential()
+    #model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+    #model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+    #model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
+    #model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+    #model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
+    #model.add(tf.keras.layers.Flatten())
+    #model.add(tf.keras.layers.Dense(64, activation='relu'))
+    #model.add(tf.keras.layers.Dense(10))
 
-    # model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
-    model = tf.keras.models.Sequential()
-    model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
-    model.add(tf.keras.layers.MaxPooling2D((2, 2)))
-    model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
-    model.add(tf.keras.layers.MaxPooling2D((2, 2)))
-    model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
-    model.add(tf.keras.layers.Flatten())
-    model.add(tf.keras.layers.Dense(64, activation='relu'))
-    model.add(tf.keras.layers.Dense(10))
+    model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
 
     # Instantiate an optimizer.
     optimizer = tf.keras.optimizers.SGD(learning_rate=0.1)
