@@ -12,7 +12,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 def run(rank, size):
     epochs = 1
     lr = 0.1
-    train_bs = 16
+    train_bs = 64
     test_bs = 32
     graph_type = 'ring'
 
@@ -90,7 +90,8 @@ def train(Comm, model, train_data, loss_f, optimizer, epochs):
                 # perform model averaging
                 comm_time += Comm.communicate(model)
 
-            print('Rank %d Finished Batch %d With Training Loss %0.4f' % (rank, batch_idx, epoch_loss_avg.result()))
+            if batch_idx % 50 == 0:
+                print('Rank %d Finished Batch %d With Training Loss %0.4f' % (rank, batch_idx, epoch_loss_avg.result()))
 
         training_losses.append(epoch_loss_avg.result())
         training_accuracies.append(epoch_accuracy.result())
