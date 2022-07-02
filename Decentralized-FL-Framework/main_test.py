@@ -19,16 +19,15 @@ def run(rank, size):
     train_bs = 64
     graph_type = 'ring'
 
-    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
-
-    # Normalize pixel values to be between 0 and 1
-    train_images, test_images = train_images / 255.0, test_images / 255.0
-    train_dataset = tf.data.Dataset.from_tensor_slices((train_images[-10000:], train_labels[-10000:]))
+    # inputs = tf.keras.Input(shape=(784,), name="digits")
+    # x = tf.keras.layers.Dense(64, activation="relu", name="dense_1")(inputs)
+    # x = tf.keras.layers.Dense(64, activation="relu", name="dense_2")(x)
+    # outputs = tf.keras.layers.Dense(10, name="predictions")(x)
+    # model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
     # model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
     model = tf.keras.models.Sequential()
-    model.add(tf.keras.layers.Input(shape=train_dataset.shape[1:]))
-    model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu'))
+    model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
     model.add(tf.keras.layers.MaxPooling2D((2, 2)))
     model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
     model.add(tf.keras.layers.MaxPooling2D((2, 2)))
@@ -45,6 +44,14 @@ def run(rank, size):
     # Prepare the metrics.
     acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
     loss_metric = tf.keras.metrics.Mean()
+
+    # train_dataset, test_dataset = load_data()
+
+    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
+    # Normalize pixel values to be between 0 and 1
+    train_images, test_images = train_images / 255.0, test_images / 255.0
+    train_dataset = tf.data.Dataset.from_tensor_slices((train_images[-10000:], train_labels[-10000:]))
+    train_dataset.batch(train_bs)
 
     train(model, train_dataset, loss_fn, optimizer, acc_metric, loss_metric, epochs)
 
