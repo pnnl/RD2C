@@ -8,12 +8,13 @@ mnist = tf.keras.datasets.mnist
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train, x_test = x_train / 255.0, x_test / 255.0
-model = tf.keras.models.Sequential([
-  tf.keras.layers.Flatten(input_shape=(28, 28)),
-  tf.keras.layers.Dense(128, activation='relu'),
-  tf.keras.layers.Dropout(0.2),
-  tf.keras.layers.Dense(10)
-])
+
+inputs = tf.keras.Input(shape=(784,), name="digits")
+x = tf.keras.layers.Dense(64, activation="relu", name="dense_1")(inputs)
+x = tf.keras.layers.Dense(64, activation="relu", name="dense_2")(x)
+outputs = tf.keras.layers.Dense(10, name="predictions")(x)
+model = tf.keras.Model(inputs=inputs, outputs=outputs)
+
 # Instantiate an optimizer.
 optimizer = tf.keras.optimizers.SGD(learning_rate=1e-3)
 # Instantiate a loss function.
