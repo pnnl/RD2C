@@ -46,6 +46,10 @@ def run(rank, size):
         # Cross entropy loss
         loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
+        # Accuracy metrics
+        loss_metric = tf.keras.metrics.Mean()
+        acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
+
     with tf.device('/device:CPU:0'):
 
         # find shape and total elements for each layer of the resnet model
@@ -67,28 +71,30 @@ def run(rank, size):
     MPI.COMM_WORLD.Barrier()
 
     with tf.device(assigned_gpu):
-        train(Communicator, model, worker_train_data, loss_function, optimizer, epochs)
+        train(Communicator, model, worker_train_data, loss_function, optimizer, acc_metric, loss_metric, epochs)
 
 
-def train(Comm, model, train_data, loss_f, optimizer, epochs):
+def train(Comm, model, train_data, loss_f, optimizer, epoch_accuracy, epoch_loss_avg, epochs):
     training_losses = []
     training_accuracies = []
     comm_times = []
-    epoch_loss_avg = tf.keras.metrics.Mean()
-    epoch_accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
     for epoch in range(epochs):
         comm_time = 0
         for batch_idx, (data, target) in enumerate(train_data):
 
             # Optimize model
-            loss_value, grads = compute_grad(model, loss_f, data, target)
+            # loss_value, grads = compute_grad(model, loss_f, data, target)
+            with tf.GradientTape() as tape:
+                y_p = model(data, training=True)
+                loss_val = loss_f(y_true=target, y_pred=y_p)
+            grads = tape.gradient(loss_val, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
             # Track progress
-            epoch_loss_avg.update_state(loss_value)  # Add current batch loss
+            epoch_loss_avg.update_state(loss_val)  # Add current batch loss
 
             # Compare predicted label to actual label
-            epoch_accuracy.update_state(target, model(data, training=True))
+            epoch_accuracy.update_state(target, y_p)
 
             # with tf.device('/device:CPU:0'):
                 # perform model averaging
@@ -106,20 +112,14 @@ def train(Comm, model, train_data, loss_f, optimizer, epochs):
                                                                         epoch_loss_avg.result(),
                                                                         epoch_accuracy.result()))
 
-        epoch_loss_avg.reset_state()
-        epoch_accuracy.reset_state()
+        epoch_loss_avg.reset_states()
+        epoch_accuracy.reset_states()
 
     return training_accuracies, training_losses
 
 
-def forward_pass(model, x, training_bool):
-    # training=training is needed only if there are layers with different
-    # behavior during training versus inference (e.g. Dropout)
-    return model(x, training=training_bool)
-
-
 def compute_loss(model, x, y, loss_f, training_bool):
-    y_p = forward_pass(model, x, training_bool=training_bool)
+    y_p = model(x, training=training_bool)
     return loss_f(y_true=y, y_pred=y_p)
 
 
