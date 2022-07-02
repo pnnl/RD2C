@@ -7,17 +7,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-# test these
+# these work to remove DNN library error
 os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
 os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 
 def run(rank, size):
-    epochs = 1
+    epochs = 20
     lr = 0.1
     train_bs = 64
-    test_bs = 32
     graph_type = 'ring'
 
     gpus = tf.config.list_logical_devices('GPU')
@@ -103,7 +102,7 @@ def train(Comm, model, train_data, loss_f, optimizer, epochs):
         comm_times.append(comm_time)
 
         if epoch % 1 == 0:
-            print("Epoch {:03d}: Loss: {:.3f}, Accuracy: {:.3%}".format(epoch,
+            print("Epoch {:%d}: Loss: {:%.3f}, Accuracy: {:%.3f}".format(epoch,
                                                                         epoch_loss_avg.result(),
                                                                         epoch_accuracy.result()))
 
