@@ -14,7 +14,7 @@ os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 
 def run(rank, size):
-    epochs = 3
+    epochs = 20
     lr = 0.1
     train_bs = 64
     graph_type = 'ring'
@@ -37,7 +37,7 @@ def run(rank, size):
     model.add(tf.keras.layers.Dense(10))
 
     # Instantiate an optimizer.
-    optimizer = tf.keras.optimizers.SGD(learning_rate=1e-3)
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.1)
     # Instantiate a loss function.
     loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
