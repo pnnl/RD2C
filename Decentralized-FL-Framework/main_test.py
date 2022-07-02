@@ -52,6 +52,10 @@ def run(rank, size):
     train_images, test_images = train_images / 255.0, test_images / 255.0
     train_dataset = tf.data.Dataset.from_tensor_slices((train_images[-10000:], train_labels[-10000:]))
     train_dataset.batch(train_bs)
+    print(train_dataset.shape)
+    for (data, target) in train_dataset:
+        print(data.shape)
+
 
     train(model, train_dataset, loss_fn, optimizer, acc_metric, loss_metric, epochs)
 
