@@ -25,7 +25,16 @@ def run(rank, size):
     # outputs = tf.keras.layers.Dense(10, name="predictions")(x)
     # model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
-    model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
+    # model = tf.keras.applications.resnet50.ResNet50(include_top=False, weights=None)
+    model = tf.keras.models.Sequential()
+    model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+    model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+    model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
+    model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+    model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
+    model.add(tf.keras.layers.Flatten())
+    model.add(tf.keras.layers.Dense(64, activation='relu'))
+    model.add(tf.keras.layers.Dense(10))
 
     # Instantiate an optimizer.
     optimizer = tf.keras.optimizers.SGD(learning_rate=1e-3)
