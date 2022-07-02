@@ -41,7 +41,7 @@ def run(rank, size):
         model = tf.keras.applications.MobileNetV3Large(include_top=False, weights=None)
 
         # Use adam optimizer (could use SGD)
-        optimizer = tf.keras.optimizers.SGD(learning_rate=lr)
+        optimizer = tf.keras.optimizers.SGD(learning_rate=lr, momentum=0.9, nesterov=True)
 
         # Cross entropy loss
         loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
