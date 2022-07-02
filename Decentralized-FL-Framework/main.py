@@ -90,9 +90,9 @@ def train(Comm, model, train_data, loss_f, optimizer, epochs):
             # Compare predicted label to actual label
             epoch_accuracy.update_state(target, model(data, training=True))
 
-            with tf.device('/device:CPU:0'):
+            # with tf.device('/device:CPU:0'):
                 # perform model averaging
-                comm_time += Comm.communicate(model)
+            #    comm_time += Comm.communicate(model)
 
             if batch_idx % 50 == 0:
                 print('Rank %d Finished Batch %d With Training Loss %0.4f' % (rank, batch_idx, epoch_loss_avg.result()))
