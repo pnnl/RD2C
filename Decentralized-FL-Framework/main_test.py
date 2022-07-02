@@ -49,7 +49,13 @@ def run(rank, size):
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
 
-    train_dataset, test_dataset = load_data()
+    # train_dataset, test_dataset = load_data()
+
+    (train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.cifar10.load_data()
+
+    # Normalize pixel values to be between 0 and 1
+    train_images, test_images = train_images / 255.0, test_images / 255.0
+    train_dataset = tf.data.Dataset.from_tensor_slices((train_images[-10000:], train_labels[-10000:]))
 
     train(model, train_dataset, loss_fn, optimizer, acc_metric, loss_metric, epochs)
 
