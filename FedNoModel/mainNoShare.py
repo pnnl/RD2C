@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from mpi4py import MPI
+from comm_weights import unflatten_weights, flatten_weights
 import os
 np.random.seed(132)
 tf.keras.backend.set_floatx('float64')
@@ -29,6 +30,32 @@ def consensus_loss(y_true, y_pred, z, l2):
     return local_mse + consensus_mse
 
 
+def get_model_architecture(model):
+    # find shape and total elements for each layer of the resnet model
+    model_weights = model.get_weights()
+    layer_shapes = []
+    layer_sizes = []
+    for i in range(len(model_weights)):
+        layer_shapes.append(model_weights[i].shape)
+        layer_sizes.append(model_weights[i].size)
+    return layer_shapes, layer_sizes
+
+
+def model_sync(model, layer_shapes, layer_sizes, size):
+    # necessary preprocess
+    model_weights = model.get_weights()
+    # flatten tensor weights
+    send_buffer = flatten_weights(model_weights)
+    recv_buffer = np.zeros_like(send_buffer)
+    # perform all-reduce to synchronize initial models across all clients
+    MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
+    # divide by total workers to get average model
+    recv_buffer = recv_buffer / size
+    # update local models
+    new_weights = unflatten_weights(recv_buffer, layer_shapes, layer_sizes)
+    model.set_weights(new_weights)
+
+
 # def scheduler(epoch, lr):
 #  if epoch < 45:
 #     return lr
@@ -38,12 +65,10 @@ def consensus_loss(y_true, y_pred, z, l2):
 
 def run(rank, size):
 
-    print(rank)
-
     # Hyper-parameters
     n = 1000
     alpha = 0.05
-    epochs = 2
+    epochs = 1
     learning_rate = 0.01
 
     # 2d example
@@ -71,6 +96,8 @@ def run(rank, size):
     # Coordination set construction
     coord_size = 160
     c_batch_size = 16
+    c_num_batches = int(coord_size/c_batch_size)
+
     true_x = np.tile(np.linspace(-2*np.pi, 2*np.pi, coord_size), (2, 1)).transpose()
     true_y = np.sin(np.cos(true_x[:, 1])) + np.exp(np.cos(true_x[:, 0]))
     coord_max = np.max(true_x)
@@ -88,6 +115,13 @@ def run(rank, size):
     model.add(tf.keras.layers.Dense(10, activation='relu'))
     model.add(tf.keras.layers.Dense(1))
 
+    # get model architecture
+    layer_shapes, layer_sizes = get_model_architecture(model)
+
+    # Sync model weights
+    model_sync(model, layer_shapes, layer_sizes, size)
+    MPI.COMM_WORLD.Barrier()
+
     # Initialize Local Loss Function
     lossF = tf.keras.losses.MeanSquaredError()
 
@@ -95,12 +129,14 @@ def run(rank, size):
     # learning_rate = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=learning_rate,
     # decay_steps=20, decay_rate=.5)
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-    train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs)
+    #train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, c_batch_size, c_num_batches)
+    train(model, lossF, optimizer, coordination_dataset, coordination_dataset, epochs, c_batch_size, c_num_batches)
 
 
-def train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs):
+def train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, coord_batch_size, batches):
     loss_metric = tf.keras.metrics.MeanSquaredError()
     for epoch in range(epochs):
+
         # Local Training
         for batch_idx, (data, target) in enumerate(train_dataset):
             with tf.GradientTape() as tape:
@@ -109,22 +145,31 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs):
             grads = tape.gradient(loss_val, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
+        # Forward Pass of Coordination Set
+        predicted = np.empty((batches, coord_batch_size))
+        send_loss = np.empty(batches)
+        recv_avg_loss = np.empty(batches)
+        for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
+            c_yp = model(c_data, training=True)
+            predicted[c_batch_idx, :] = c_yp.numpy().flatten()
+            send_loss[c_batch_idx] = lossF(y_true=c_target, y_pred=c_yp).numpy()
+
         # Communication Process Here
+        MPI.COMM_WORLD.Allreduce(send_loss, recv_avg_loss, op=MPI.SUM)
+        recv_avg_loss = recv_avg_loss/size
 
         # Consensus Training
         for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
             with tf.GradientTape() as tape:
                 c_yp = model(c_data, training=True)
                 # for now testing, have consensus be just the predicted (so no consensus error)
-                z = c_yp
-                loss_val = consensus_loss(y_true=c_target, y_pred=c_yp, z=z, l2=1.0)
+                loss_val = consensus_loss(y_true=c_target, y_pred=c_yp, z=recv_avg_loss, l2=1.0)
             grads = tape.gradient(loss_val, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
             loss_metric.update_state(c_target, c_yp)
-            # if (c_batch_idx+1) % (coord_size/c_batch_size) == 0:
-            #    print('Training Loss: %0.4f' % (loss_metric.result()))
 
+        # print('Rank %d Training Loss: %0.4f' % (rank, loss_metric.result()))
         loss_metric.reset_states()
 
 
