@@ -1,8 +1,10 @@
 import numpy as np
 import tensorflow as tf
 from mpi4py import MPI
+import os
 np.random.seed(132)
 tf.keras.backend.set_floatx('float64')
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 
 def synthetic_data2d(n, alpha):
@@ -35,14 +37,18 @@ def consensus_loss(y_true, y_pred, z, l2):
 
 
 def run(rank, size):
+
+    print(rank)
+
     # Hyper-parameters
     n = 1000
     alpha = 0.05
-    epochs = 100
+    epochs = 2
     learning_rate = 0.01
+
     # 2d example
-    X, Y = synthetic_data2d(n, alpha)
-    #%%
+    X, Y = synthetic_data2d(int(n/size), alpha)
+
     # Rescale data between 0 and 1
     data_max = np.max(X)
     data_min = np.min(X)
@@ -61,15 +67,15 @@ def run(rank, size):
     # shuffle and batch
     train_dataset = train_dataset.shuffle(int(num_data * train_split)).batch(batch_size)
     test_dataset = test_dataset.batch(batch_size)
-    #%%
+
     # Coordination set construction
     coord_size = 160
     c_batch_size = 16
-    true_x = np.random.uniform(-2*np.pi, 2*np.pi, size=(coord_size, 2))
+    true_x = np.tile(np.linspace(-2*np.pi, 2*np.pi, coord_size), (2, 1)).transpose()
     true_y = np.sin(np.cos(true_x[:, 1])) + np.exp(np.cos(true_x[:, 0]))
     coord_max = np.max(true_x)
     coord_min = np.min(true_x)
-    true_x = (true_x - data_min) / (data_max - data_min)
+    true_x = (true_x - coord_min) / (coord_max - coord_min)
     coordination_dataset = tf.data.Dataset.from_tensor_slices((true_x, true_y))
     coordination_dataset = coordination_dataset.batch(c_batch_size)
 
