@@ -23,10 +23,10 @@ def consensus_loss(y_true, y_pred, z, l2):
     local_error = y_true - y_pred
     local_square_error = tf.square(local_error)
     local_mse = tf.reduce_mean(local_square_error)
-    # consensus error
-    consensus_error = z - y_pred
+    # consensus loss error
+    consensus_error = z - local_mse
     consensus_square_error = tf.square(consensus_error)
-    consensus_mse = l2*tf.reduce_mean(consensus_square_error)
+    consensus_mse = l2*tf.reduce_sum(consensus_square_error)
     return local_mse + consensus_mse
 
 
@@ -68,7 +68,7 @@ def run(rank, size):
     # Hyper-parameters
     n = 1000
     alpha = 0.05
-    epochs = 1
+    epochs = 100
     learning_rate = 0.01
 
     # 2d example
@@ -129,8 +129,7 @@ def run(rank, size):
     # learning_rate = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=learning_rate,
     # decay_steps=20, decay_rate=.5)
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-    #train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, c_batch_size, c_num_batches)
-    train(model, lossF, optimizer, coordination_dataset, coordination_dataset, epochs, c_batch_size, c_num_batches)
+    train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, c_batch_size, c_num_batches)
 
 
 def train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, coord_batch_size, batches):
@@ -144,6 +143,8 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, 
                 loss_val = lossF(y_true=target, y_pred=y_p)
             grads = tape.gradient(loss_val, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
+
+            loss_metric.update_state(target, y_p)
 
         # Forward Pass of Coordination Set
         predicted = np.empty((batches, coord_batch_size))
@@ -162,14 +163,14 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, 
         for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
             with tf.GradientTape() as tape:
                 c_yp = model(c_data, training=True)
-                # for now testing, have consensus be just the predicted (so no consensus error)
-                loss_val = consensus_loss(y_true=c_target, y_pred=c_yp, z=recv_avg_loss, l2=1.0)
+                loss_val = consensus_loss(y_true=c_target, y_pred=c_yp, z=recv_avg_loss[c_batch_idx], l2=1.0)
             grads = tape.gradient(loss_val, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
-            loss_metric.update_state(c_target, c_yp)
+            # loss_metric.update_state(c_target, c_yp)
 
-        # print('Rank %d Training Loss: %0.4f' % (rank, loss_metric.result()))
+        if rank == 0:
+            print('Rank %d Training Loss for Epoch %d: %0.4f' % (rank, epoch, loss_metric.result()))
         loss_metric.reset_states()
 
 
