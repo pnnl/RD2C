@@ -19,8 +19,6 @@ def synthetic_data2d(n, alpha):
 # Implement Custom Loss Function
 @tf.function
 def consensus_loss(y_true, y_pred, z, l2):
-    print(y_true.dtype)
-    print(y_pred.dtype)
     # local error
     local_error = y_true - y_pred
     local_square_error = tf.square(local_error)
@@ -128,6 +126,8 @@ def run(rank, size):
 
     true_x = np.tile(np.linspace(-2*np.pi, 2*np.pi, coord_size), (2, 1)).transpose()
     true_y = np.sin(np.cos(true_x[:, 1])) + np.exp(np.cos(true_x[:, 0]))
+    true_x = true_x.astype(np.float32)
+    true_y = true_y.astype(np.float32)
     coord_max = np.max(true_x)
     coord_min = np.min(true_x)
     true_x = (true_x - coord_min) / (coord_max - coord_min)
@@ -167,7 +167,6 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, 
 
         # Local Training
         for batch_idx, (data, target) in enumerate(train_dataset):
-            print(target.dtype)
             with tf.GradientTape() as tape:
                 y_p = model(data, training=True)
                 loss_val = lossF(y_true=target, y_pred=y_p)
@@ -177,12 +176,12 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, 
             loss_metric.update_state(target, y_p)
 
         # Forward Pass of Coordination Set
-        send_predicted = np.zeros((batches, coord_batch_size), dtype=np.float64)
+        send_predicted = np.zeros((batches, coord_batch_size), dtype=np.float32)
         loss = np.zeros(batches, dtype=np.float64)
-        recv_avg_pred = np.zeros((batches, coord_batch_size), dtype=np.float64)
+        recv_avg_pred = np.zeros((batches, coord_batch_size), dtype=np.float32)
         for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
             pred = model(c_data, training=True)
-            send_predicted[c_batch_idx, :] = pred.numpy().astype(np.float64).flatten()
+            send_predicted[c_batch_idx, :] = pred.numpy().flatten()
             loss[c_batch_idx] = lossF(y_true=c_target, y_pred=pred).numpy()
 
         # Communication Process Here
