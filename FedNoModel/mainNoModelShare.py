@@ -2,9 +2,9 @@ import numpy as np
 import tensorflow as tf
 from mpi4py import MPI
 from comm_weights import unflatten_weights, flatten_weights
+import matplotlib.pyplot as plt
 import os
 np.random.seed(132)
-tf.keras.backend.set_floatx('float32')
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 
@@ -19,15 +19,17 @@ def synthetic_data2d(n, alpha):
 # Implement Custom Loss Function
 @tf.function
 def consensus_loss(y_true, y_pred, z, l2):
+
     # local error
     local_error = y_true - y_pred
     local_square_error = tf.square(local_error)
     local_mse = tf.reduce_mean(local_square_error)
+
     # consensus loss error
-    # consensus_error = z - local_mse
     consensus_error = z - y_pred
     consensus_square_error = tf.square(consensus_error)
     consensus_mse = l2*tf.reduce_sum(consensus_square_error)
+
     return local_mse + consensus_mse
 
 
@@ -43,7 +45,6 @@ def get_model_architecture(model):
 
 
 def model_sync(model, layer_shapes, layer_sizes, size):
-
     # necessary preprocess
     model_weights = model.get_weights()
     # flatten tensor weights
@@ -57,34 +58,23 @@ def model_sync(model, layer_shapes, layer_sizes, size):
     new_weights = unflatten_weights(recv_buffer, layer_shapes, layer_sizes)
     model.set_weights(new_weights)
 
-    '''
-    send_buffer = None
-    if rank == 0:
-        # necessary preprocess
-        model_weights = model.get_weights()
-        # flatten tensor weights
-        send_buffer = flatten_weights(model_weights)
-        for i in range(1, size):
-            MPI.COMM_WORLD.Send(send_buffer, i, tag=i)
-        recv_buffer = send_buffer
+
+# Play around with this more
+def set_learning_rate(optimizer, epoch):
+    if epoch <= 30:
+        optimizer.lr = 0.0025
+    if 30 < epoch <= 100:
+        optimizer.lr = 0.0015
+    elif 100 < epoch <= 200:
+        optimizer.lr = 0.001
+    elif 200 < epoch <= 300:
+        optimizer.lr = 0.0005
+    elif 300 < epoch <= 400:
+        optimizer.lr = 0.00045
+    elif 400 < epoch <= 450:
+        optimizer.lr = 0.00005
     else:
-        # necessary preprocess
-        model_weights = model.get_weights()
-        # flatten tensor weights
-        temp = flatten_weights(model_weights)
-        recv_buffer = np.zeros_like(temp)
-        MPI.COMM_WORLD.Recv(recv_buffer, 0, tag=rank)
-
-    new_weights = unflatten_weights(recv_buffer, layer_shapes, layer_sizes)
-    model.set_weights(new_weights)
-    '''
-
-
-# def scheduler(epoch, lr):
-#  if epoch < 45:
-#     return lr
-#   else:
-#     return lr * tf.math.exp(-0.05)
+        optimizer.lr = 0.00001
 
 
 def run(rank, size):
@@ -92,8 +82,8 @@ def run(rank, size):
     # Hyper-parameters
     n = 1000
     alpha = 0.05
-    epochs = 100
-    learning_rate = 0.01
+    epochs = 500
+    learning_rate = 0.0025
 
     # 2d example
     # X, Y = synthetic_data2d(int(n/size), alpha)
@@ -147,23 +137,70 @@ def run(rank, size):
     layer_shapes, layer_sizes = get_model_architecture(model)
 
     # Sync model weights
-    # model_sync(model, layer_shapes, layer_sizes, size)
+    model_sync(model, layer_shapes, layer_sizes, size)
     MPI.COMM_WORLD.Barrier()
 
     # Initialize Local Loss Function
     lossF = tf.keras.losses.MeanSquaredError()
 
     # Initialize Optimizer
-    # learning_rate = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=learning_rate,
-    # decay_steps=20, decay_rate=.5)
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-    # train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, c_batch_size, c_num_batches)
-    train(model, lossF, optimizer, coordination_dataset, coordination_dataset, epochs, c_batch_size, c_num_batches)
+
+    # Train model
+    train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, c_batch_size, c_num_batches)
+    # Uncomment below to debug any consensus issues
+    # train(model, lossF, optimizer, coordination_dataset, coordination_dataset, epochs, c_batch_size, c_num_batches)
+
+    if rank == 0:
+        # Evaluate model
+        model.compile(loss=lossF, optimizer=optimizer)
+        model.evaluate(test_dataset)
+
+        # plot result
+        # 2d example
+        N = 50
+        xx = np.linspace(-2 * np.pi, 2 * np.pi, N)
+        xv, yv = np.meshgrid(xx, xx)
+        z = np.empty(N * N)
+        c = 0
+        for i in range(N):
+            for j in range(N):
+                z[c] = np.sin(np.cos(yv[i, j])) + np.exp(np.cos(xv[i, j]))
+                c += 1
+
+        X2 = np.vstack((xv.flatten(), yv.flatten())).transpose()
+        X2 = (X2 - np.min(X2)) / (np.max(X2) - np.min(X2))
+        test_predictions = model.predict(X2).flatten()
+
+        plt.figure(1)
+        plt.scatter(z, test_predictions, color='blue')
+        a = min(np.min(z), np.min(test_predictions)) - 0.5
+        b = max(np.max(z), np.max(test_predictions)) + 0.5
+        e = np.linspace(a, b, 100)
+        plt.xlim(a, b)
+        plt.ylim(a, b)
+        plt.plot(e, e, color='black')
+        plt.title('Actual vs. Predicted Values')
+        plt.show()
+
+        plt.figure(2)
+        ax = plt.axes(projection='3d')
+        ax.scatter(X2[:, 0], X2[:, 1], z, color='black', alpha=0.1, label='Actual Fit')
+        ax.scatter(X2[:, 0], X2[:, 1], test_predictions, color='red', label='Predicted Fit')
+        ax.legend(loc='upper right')
+        plt.title('Predicted vs. Actual Fit')
+        plt.show()
+
+    # Ideas:
+    # 1) Make separate optimizers for the local train and consensus train (so learning rates can differ)
 
 
 def train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, coord_batch_size, batches):
     loss_metric = tf.keras.metrics.MeanSquaredError()
     for epoch in range(epochs):
+
+        # Adjust learning rate
+        set_learning_rate(optimizer, epoch)
 
         # Local Training
         for batch_idx, (data, target) in enumerate(train_dataset):
@@ -176,32 +213,35 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset, epochs, 
             loss_metric.update_state(target, y_p)
 
         # Forward Pass of Coordination Set
-        send_predicted = np.zeros((batches, coord_batch_size), dtype=np.float32)
-        loss = np.zeros(batches, dtype=np.float64)
-        recv_avg_pred = np.zeros((batches, coord_batch_size), dtype=np.float32)
+        send_predicted = np.zeros((coord_batch_size, batches), dtype=np.float32)
+        recv_avg_pred = np.zeros((coord_batch_size, batches), dtype=np.float32)
+        # loss = np.zeros(batches, dtype=np.float64)
         for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
             pred = model(c_data, training=True)
-            send_predicted[c_batch_idx, :] = pred.numpy().flatten()
-            loss[c_batch_idx] = lossF(y_true=c_target, y_pred=pred).numpy()
+            send_predicted[:, c_batch_idx] = pred.numpy().flatten()
+            # loss[c_batch_idx] = lossF(y_true=c_target, y_pred=pred).numpy()
 
         # Communication Process Here
-        # print(pred - send_predicted)
         MPI.COMM_WORLD.Allreduce(send_predicted, recv_avg_pred, op=MPI.SUM)
         recv_avg_pred = recv_avg_pred/size
-        # print(recv_avg_pred - pred)
 
         # Consensus Training
         for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
             with tf.GradientTape() as tape:
                 c_yp = model(c_data, training=True)
-                loss_val = consensus_loss(y_true=c_target, y_pred=c_yp, z=recv_avg_pred[c_batch_idx, :], l2=1.0)
+                # loss_val = lossF(y_true=c_target, y_pred=c_yp)
+                # coordination (consensus) loss
+                loss_val = consensus_loss(y_true=c_target, y_pred=c_yp,
+                                           z=recv_avg_pred[:, c_batch_idx].reshape(coord_batch_size, 1),
+                                           l2=0.1)
+
             grads = tape.gradient(loss_val, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
             # loss_metric.update_state(c_target, c_yp)
 
-        if rank == 0:
-            print('Rank %d Training Loss for Epoch %d: %0.4f' % (rank, epoch, loss_metric.result()))
+        if rank == 0 and epoch % 10 == 0:
+            print('(Rank %d) Training Loss for Epoch %d: %0.4f' % (rank, epoch, loss_metric.result()))
         loss_metric.reset_states()
 
 
