@@ -20,9 +20,7 @@ def synthetic_data2d(n, alpha):
 @tf.function
 def consensus_loss(y_true, y_pred, z, l2):
     # local error
-    local_error = y_true - y_pred
-    local_square_error = tf.square(local_error)
-    local_mse = tf.reduce_mean(local_square_error)
+    local_mse = tf.keras.losses.MeanSquaredError()(y_true, y_pred)
     # consensus loss error
     consensus_error = z - local_mse
     consensus_square_error = tf.square(consensus_error)
