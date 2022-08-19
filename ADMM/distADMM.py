@@ -48,9 +48,12 @@ def consensus_loss(y_true, y_pred, z, lam, rho):
     # local error
     local_mse = tf.keras.losses.MeanSquaredError()(y_true, y_pred)
     # consensus error (lambda term)
-    consensus_mse = lam * tf.reduce_sum(y_pred - z)
+    consensus_error = y_pred - z
+    consensus_mse = lam * tf.reduce_sum(consensus_error)
     # consensus error (rho term)
-    consensus_mse += (rho/2)*tf.keras.losses.MeanSquaredError()(z, y_pred)
+    consensus_square_error = tf.square(consensus_error)
+    consensus_mse += (rho/2) * tf.reduce_sum(consensus_square_error)
+
     return local_mse + consensus_mse
 
 
@@ -86,8 +89,8 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset,
         # Step (2) Minimize Lagrangian
         del_loss = np.Inf
         prev_loss = np.Inf
-        if rank == 0:
-            print('Minimizing Lagrangian...')
+        #if rank == 0:
+        #    print('Minimizing Lagrangian...')
         while del_loss > loss_thresh:
             for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
                 with tf.GradientTape() as tape:
@@ -101,11 +104,8 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset,
             cur_loss = loss_metric.result()
             del_loss = np.abs(prev_loss - cur_loss)
             prev_loss = cur_loss
-            print(cur_loss)
-        if rank == 0:
-            print('Lagrangian Minimization Threshold Met...')
-
-
+        #if rank == 0:
+        #    print('Lagrangian Minimization Threshold Met...')
 
         # Step (3) Update lambda
         # Second Forward Pass of Coordination Set
@@ -125,7 +125,7 @@ def run(rank, size):
     # Hyper-parameters
     n = 1000
     alpha = 0.05
-    epochs = 50
+    epochs = 150
     learning_rate = 0.0025
 
     # 2d example
@@ -186,11 +186,13 @@ def run(rank, size):
     MPI.COMM_WORLD.Barrier()
 
     # run training
-    rho = 0.1
-    lam = 0.1
+    rho = 0.05
+    lam = 0.01
     loss_thresh = 0.1
-    train(model, lossF, optimizer, train_dataset, coordination_dataset,
+    train(model, lossF, optimizer, coordination_dataset, coordination_dataset,
           epochs, c_batch_size, c_num_batches, loss_thresh, rho, lam)
+    #train(model, lossF, optimizer, train_dataset, coordination_dataset,
+    #      epochs, c_batch_size, c_num_batches, loss_thresh, rho, lam)
 
 
 if __name__ == "__main__":
