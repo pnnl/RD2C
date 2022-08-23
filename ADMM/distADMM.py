@@ -59,38 +59,41 @@ def consensus_loss(y_true, y_pred, z, lam, rho):
 
 def train(model, lossF, optimizer, train_dataset, coordination_dataset,
           epochs, coord_batch_size, batches, loss_thresh, rho, lam):
+
     loss_metric = tf.keras.metrics.MeanSquaredError()
     train_loss_metric = tf.keras.metrics.MeanSquaredError()
+
+    # intial z value
+    recv_avg_pred = np.empty((coord_batch_size, batches))
+    recv_tmp = np.empty(coord_batch_size)
+    for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
+        pred = model(c_data, training=True)
+        send_predicted = pred.numpy().flatten()
+        # share z
+        MPI.COMM_WORLD.Allreduce(send_predicted, recv_tmp, op=MPI.SUM)
+        recv_avg_pred[:, c_batch_idx] = recv_tmp / size
+
     for epoch in range(epochs):
 
-        # Local Training
-        for batch_idx, (data, target) in enumerate(train_dataset):
+        # ADMM Training: (1) Minimize Lagrangian w.r.t x  (2) Share z (3) Update lambda
+
+        # Step (1) Minimize Lagrangian
+        '''
+        for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
             with tf.GradientTape() as tape:
-                y_p = model(data, training=True)
-                loss_val = lossF(y_true=target, y_pred=y_p)
+                c_yp = model(c_data, training=True)
+                loss_val = consensus_loss(y_true=c_target, y_pred=c_yp,
+                                          z=recv_avg_pred[:, c_batch_idx].reshape(coord_batch_size, 1),
+                                          lam=lam, rho=rho)
             grads = tape.gradient(loss_val, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
+            loss_metric.update_state(c_target, c_yp)
+        loss_metric.reset_states()
+        '''
 
-            train_loss_metric.update_state(target, y_p)
-
-        # Forward Pass of Coordination Set
-        send_predicted = np.zeros((coord_batch_size, batches))
-        recv_avg_pred = np.zeros((coord_batch_size, batches))
-        for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
-            pred = model(c_data, training=True)
-            send_predicted[:, c_batch_idx] = pred.numpy().flatten()
-
-        # ADMM Training: 1) Share z 2) Minimize Lagrangian (wrt x) 3) Update lambda
-
-        # Step (1) Share z
-        MPI.COMM_WORLD.Allreduce(send_predicted, recv_avg_pred, op=MPI.SUM)
-        recv_avg_pred = recv_avg_pred / size
-
-        # Step (2) Minimize Lagrangian
+        # '''
         del_loss = np.Inf
         prev_loss = np.Inf
-        #if rank == 0:
-        #    print('Minimizing Lagrangian...')
         while del_loss > loss_thresh:
             for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
                 with tf.GradientTape() as tape:
@@ -102,21 +105,41 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset,
                 optimizer.apply_gradients(zip(grads, model.trainable_variables))
                 loss_metric.update_state(c_target, c_yp)
             cur_loss = loss_metric.result()
+            loss_metric.reset_states()
             del_loss = np.abs(prev_loss - cur_loss)
             prev_loss = cur_loss
-        #if rank == 0:
-        #    print('Lagrangian Minimization Threshold Met...')
+        # '''
 
-        # Step (3) Update lambda
-        # Second Forward Pass of Coordination Set
+        # Local Training
+        for batch_idx, (data, target) in enumerate(train_dataset):
+            with tf.GradientTape() as tape:
+                y_p = model(data, training=True)
+                loss_val = lossF(y_true=target, y_pred=y_p)
+            grads = tape.gradient(loss_val, model.trainable_weights)
+            optimizer.apply_gradients(zip(grads, model.trainable_variables))
+
+            train_loss_metric.update_state(target, y_p)
+
+        # Step (2) Share z AND Step (3) Update lambda
+        # Forward Pass of Coordination Set
+        recv_avg_pred = np.empty((coord_batch_size, batches))
+        recv_tmp = np.empty(coord_batch_size)
         lam_sum = 0
         for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
             pred = model(c_data, training=True)
-            lam_sum += np.sum(pred.numpy().flatten() - recv_avg_pred[:, c_batch_idx])
-        lam += rho*lam_sum
+            send_predicted = pred.numpy().flatten()
+            # share z
+            MPI.COMM_WORLD.Allreduce(send_predicted, recv_tmp, op=MPI.SUM)
+            recv_avg_pred[:, c_batch_idx] = recv_tmp / size
+            # perform lambda sum
+            lam_sum += np.sum(send_predicted - recv_avg_pred[:, c_batch_idx])
+
+        # update lambda
+        lam += rho * lam_sum
 
         if rank == 0:
             print('Rank %d Training Loss for Epoch %d: %0.4f' % (rank, epoch, train_loss_metric.result()))
+            print('Rank %d Lambda Value for Epoch %d: %0.4f' % (rank, epoch, lam))
         train_loss_metric.reset_states()
 
 
@@ -125,8 +148,12 @@ def run(rank, size):
     # Hyper-parameters
     n = 1000
     alpha = 0.05
-    epochs = 150
-    learning_rate = 0.0025
+    alpha = 0
+    epochs = 750
+    learning_rate = 0.005
+    rho = 0.005
+    lam = 0.1
+    loss_thresh = 0.5
 
     # 2d example
     X, Y = synthetic_data2d(n, alpha)
@@ -186,13 +213,10 @@ def run(rank, size):
     MPI.COMM_WORLD.Barrier()
 
     # run training
-    rho = 0.05
-    lam = 0.01
-    loss_thresh = 0.1
-    train(model, lossF, optimizer, coordination_dataset, coordination_dataset,
-          epochs, c_batch_size, c_num_batches, loss_thresh, rho, lam)
-    #train(model, lossF, optimizer, train_dataset, coordination_dataset,
+    #train(model, lossF, optimizer, coordination_dataset, coordination_dataset,
     #      epochs, c_batch_size, c_num_batches, loss_thresh, rho, lam)
+    train(model, lossF, optimizer, train_dataset, coordination_dataset,
+          epochs, c_batch_size, c_num_batches, loss_thresh, rho, lam)
 
 
 if __name__ == "__main__":
