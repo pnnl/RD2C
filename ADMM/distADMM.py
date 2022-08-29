@@ -66,12 +66,18 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset,
     # intial z value
     recv_avg_pred = np.empty((coord_batch_size, batches))
     recv_tmp = np.empty(coord_batch_size)
+    lam = 0
     for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
         pred = model(c_data, training=True)
         send_predicted = pred.numpy().flatten()
         # share z
         MPI.COMM_WORLD.Allreduce(send_predicted, recv_tmp, op=MPI.SUM)
         recv_avg_pred[:, c_batch_idx] = recv_tmp / size
+        # initial lambda
+        lam += rho * np.sum(send_predicted - recv_avg_pred[:, c_batch_idx])
+
+    e_count = 0
+    print('Rank %d Has Lambda = %f' % (rank, lam))
 
     for epoch in range(epochs):
 
@@ -95,6 +101,12 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset,
         del_loss = np.Inf
         prev_loss = np.Inf
         while del_loss > loss_thresh:
+
+            # reset metrics
+            loss_metric.reset_states()
+            train_loss_metric.reset_states()
+
+            # Coordination Training
             for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
                 with tf.GradientTape() as tape:
                     c_yp = model(c_data, training=True)
@@ -104,21 +116,25 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset,
                 grads = tape.gradient(loss_val, model.trainable_weights)
                 optimizer.apply_gradients(zip(grads, model.trainable_variables))
                 loss_metric.update_state(c_target, c_yp)
-            cur_loss = loss_metric.result()
-            loss_metric.reset_states()
+            # if rank == 0:
+            #    print(loss_metric.result())
+
+            # Local Training
+            for batch_idx, (data, target) in enumerate(train_dataset):
+                with tf.GradientTape() as tape:
+                    y_p = model(data, training=True)
+                    loss_val = lossF(y_true=target, y_pred=y_p)
+                grads = tape.gradient(loss_val, model.trainable_weights)
+                optimizer.apply_gradients(zip(grads, model.trainable_variables))
+                train_loss_metric.update_state(target, y_p)
+
+            e_count += 1
+            cur_loss = loss_metric.result() + train_loss_metric.result()
             del_loss = np.abs(prev_loss - cur_loss)
+            # if rank == 0:
+            #    print(del_loss)
             prev_loss = cur_loss
         # '''
-
-        # Local Training
-        for batch_idx, (data, target) in enumerate(train_dataset):
-            with tf.GradientTape() as tape:
-                y_p = model(data, training=True)
-                loss_val = lossF(y_true=target, y_pred=y_p)
-            grads = tape.gradient(loss_val, model.trainable_weights)
-            optimizer.apply_gradients(zip(grads, model.trainable_variables))
-
-            train_loss_metric.update_state(target, y_p)
 
         # Step (2) Share z AND Step (3) Update lambda
         # Forward Pass of Coordination Set
@@ -138,8 +154,8 @@ def train(model, lossF, optimizer, train_dataset, coordination_dataset,
         lam += rho * lam_sum
 
         if rank == 0:
-            print('Rank %d Training Loss for Epoch %d: %0.4f' % (rank, epoch, train_loss_metric.result()))
-            print('Rank %d Lambda Value for Epoch %d: %0.4f' % (rank, epoch, lam))
+            print('Rank %d Training Loss for Epoch %d: %0.4f' % (rank, e_count, train_loss_metric.result()))
+            print('Rank %d Lambda Value for Epoch %d: %0.4f' % (rank, e_count, lam))
         train_loss_metric.reset_states()
 
 
@@ -148,12 +164,11 @@ def run(rank, size):
     # Hyper-parameters
     n = 1000
     alpha = 0.05
-    alpha = 0
-    epochs = 750
-    learning_rate = 0.005
-    rho = 0.005
+    epochs = 250
+    learning_rate = 0.001
+    rho = 0.1
     lam = 0.1
-    loss_thresh = 0.5
+    loss_thresh = 0.1
 
     # 2d example
     X, Y = synthetic_data2d(n, alpha)
@@ -209,11 +224,11 @@ def run(rank, size):
     # Initialize Optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
-    model_sync(model, layer_shapes, layer_sizes, size)
+    # model_sync(model, layer_shapes, layer_sizes, size)
     MPI.COMM_WORLD.Barrier()
 
     # run training
-    #train(model, lossF, optimizer, coordination_dataset, coordination_dataset,
+    # train(model, lossF, optimizer, coordination_dataset, coordination_dataset,
     #      epochs, c_batch_size, c_num_batches, loss_thresh, rho, lam)
     train(model, lossF, optimizer, train_dataset, coordination_dataset,
           epochs, c_batch_size, c_num_batches, loss_thresh, rho, lam)
