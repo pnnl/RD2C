@@ -101,3 +101,38 @@ class DecentralizedSGD:
                 self.iter -= 1
 
         return comm_time
+
+
+class DecentralizedNoModelSGD:
+    """
+    decentralized averaging according to a topology sequence
+    """
+
+    def __init__(self, rank, size, comm, topology):
+        self.comm = comm
+        self.rank = rank
+        self.size = size
+        self.neighbor_list = topology.neighbor_list
+        self.neighbor_weights = topology.neighbor_weights
+
+    def average(self, predictions):
+
+        self.comm.Barrier()
+        tic = time.time()
+
+        # compute self weight according to degree
+        selfweight = 1 - np.sum(self.neighbor_weights)
+        # compute weighted average: (1-d*alpha)x_i + alpha * sum_j x_j, start with own weight
+        avg_predictions = selfweight*predictions
+
+        recv_tmp = np.empty_like(predictions)
+        # decentralized averaging
+        for idx, node in enumerate(self.neighbor_list):
+            self.comm.Sendrecv(sendbuf=predictions, source=node, recvbuf=recv_tmp, dest=node)
+            # Aggregate neighbors' models: alpha * sum_j x_j
+            avg_predictions = np.add(avg_predictions, self.neighbor_weights[idx] * recv_tmp)
+
+        self.comm.Barrier()
+        toc = time.time()
+
+        return avg_predictions, toc - tic
