@@ -205,10 +205,7 @@ if __name__ == "__main__":
     # model architecture
     layer_shapes, layer_sizes = get_model_architecture(middle_model)
 
-    # L1, L2, L3 penalties
-    L1 = args.L1
-    L2 = args.L2
-    L3 = 1 - (L1 + L2)
+
 
     # epochs
     epochs = args.epochs
@@ -219,47 +216,60 @@ if __name__ == "__main__":
     # Create MIDDLE model (same architecture and weights) for comparison
     middle_model_initial = tf.keras.models.clone_model(middle_model)
 
-    # Output Path
-    outputPath = 'Results/' + args.experiment
-    saveFolder_middle = outputPath + '/' + 'MIDDLE' + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
-                        str(L1) + 'L1Penalty-' + str(L2) + 'L2Penalty-' + str(coordination_size) + 'Csize-' + \
-                        str(args.graph_type)
+    L1 = 0.5
+    L2_vals = [0, 1. / 10, 1. / 8, 1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
 
-    recorder_middle = Recorder('MIDDLE', size, rank, args.graph_type, epochs, L1, L2, coordination_size, outputPath)
+    # run MIDDLE ablation
+    for trial in range(len(L2_vals)):
+        L2 = L2_vals[trial]
+        L3 = 1 - (L1 + L2)
 
-    mpi.Barrier()
+        # Output Path
+        outputPath = 'Results/' + args.experiment
+        saveFolder_middle = outputPath + '/' + 'MIDDLE' + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
+                            str(L1) + 'L1Penalty-' + str(L2) + 'L2Penalty-' + str(coordination_size) + 'Csize-' + \
+                            str(args.graph_type)
 
-    if rank == 0:
-        with open(saveFolder_middle + '/ExpDescription', 'w') as f:
-            f.write(str(args) + '\n')
-        print('Beginning Training...')
+        recorder_middle = Recorder('MIDDLE', size, rank, args.graph_type, epochs, L1, L2, coordination_size, outputPath)
 
-    mpi.Barrier()
+        mpi.Barrier()
 
-    # run MIDDLE training
-    middle_train(middle_model, communicator, rank, lossF, optimizer, nid_train_set, coord_set, nid_test_x,
-                 nid_test_y, epochs, coordination_size, num_outputs, layer_shapes, layer_sizes, recorder_middle,
-                 L1, L2, L3)
+        if rank == 0:
+            with open(saveFolder_middle + '/ExpDescription', 'w') as f:
+                f.write(str(args) + '\n')
+            print('Beginning Training...')
 
-    # Plot confusion matrix
-    middle_predictions = middle_model.predict(nid_test_x)
+        mpi.Barrier()
 
-    # middle training
-    pred_middle = tf.math.argmax(middle_predictions, axis=1)
-    middle_train_confusion_mtx = tf.math.confusion_matrix(nid_test_y, pred_middle)
-    # normalize confusion matrix
-    middle_train_confusion_mtx = middle_train_confusion_mtx / tf.reduce_sum(middle_train_confusion_mtx, 0).numpy()
-    middle_train_confusion_mtx = tf.where(tf.math.is_nan(middle_train_confusion_mtx),
-                                          tf.zeros_like(middle_train_confusion_mtx), middle_train_confusion_mtx)
+        middle_train(middle_model, communicator, rank, lossF, optimizer, nid_train_set, coord_set, nid_test_x,
+                     nid_test_y, epochs, coordination_size, num_outputs, layer_shapes, layer_sizes, recorder_middle,
+                     L1, L2, L3)
 
-    # MIDDLE Training Results
-    attack_labels = ['Non-Tor', 'NonVPN', 'Tor', 'VPN']
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(middle_train_confusion_mtx,
-                xticklabels=attack_labels,
-                yticklabels=attack_labels,
-                annot=True, fmt='g')
-    plt.xlabel('Prediction')
-    plt.ylabel('True Label')
-    plt.title('MIDDLE Confusion Matrix for Worker %d on CIC-Darknet2020 Data' % (rank + 1))
-    plt.savefig(saveFolder_middle + '/Regular-r' + str(rank) + '.pdf', format="pdf")
+        mpi.Barrier()
+
+        # Plot confusion matrix
+        middle_predictions = middle_model.predict(nid_test_x)
+
+        # middle training
+        pred_middle = tf.math.argmax(middle_predictions, axis=1)
+        middle_train_confusion_mtx = tf.math.confusion_matrix(nid_test_y, pred_middle)
+        # normalize confusion matrix
+        middle_train_confusion_mtx = middle_train_confusion_mtx / tf.reduce_sum(middle_train_confusion_mtx, 0).numpy()
+        middle_train_confusion_mtx = tf.where(tf.math.is_nan(middle_train_confusion_mtx),
+                                              tf.zeros_like(middle_train_confusion_mtx), middle_train_confusion_mtx)
+
+        # MIDDLE Training Results
+        attack_labels = ['Non-Tor', 'NonVPN', 'Tor', 'VPN']
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(middle_train_confusion_mtx,
+                    xticklabels=attack_labels,
+                    yticklabels=attack_labels,
+                    annot=True, fmt='g')
+        plt.xlabel('Prediction')
+        plt.ylabel('True Label')
+        plt.title('MIDDLE Confusion Matrix for Worker %d on CIC-Darknet2020 Data' % (rank + 1))
+        plt.savefig(saveFolder_middle + '/Regular-r' + str(rank) + '.pdf', format="pdf")
+
+        mpi.Barrier()
+
+        middle_model = tf.keras.models.clone_model(middle_model_initial)
