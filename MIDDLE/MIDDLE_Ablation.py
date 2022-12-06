@@ -216,13 +216,13 @@ if __name__ == "__main__":
     # Create MIDDLE model (same architecture and weights) for comparison
     middle_model_initial = tf.keras.models.clone_model(middle_model)
 
-    L1 = 0.5
-    L2_vals = [0, 1. / 10, 1. / 8, 1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
+    L1 = 1./3
+    L3_vals = [0, 1. / 10, 1. / 8, 1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
 
     # run MIDDLE ablation
-    for trial in range(len(L2_vals)):
-        L2 = L2_vals[trial]
-        L3 = 1 - (L1 + L2)
+    for trial in range(len(L3_vals)):
+        L3 = L3_vals[trial]
+        L2 = 1 - (L1 + L3)
 
         # Output Path
         outputPath = 'Results/' + args.experiment
