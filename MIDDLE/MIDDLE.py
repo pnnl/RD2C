@@ -159,9 +159,16 @@ if __name__ == "__main__":
     # preprocess and split data amongst workers
     train_set =None; test_set = None; coord_set = None; nid_train_set = None; nid_test_x = None; nid_test_y = None
     num_inputs = None; num_outputs = None
+
+    if rank == 0:
+        print('Beginning Data Preprocessing...')
+
     if args.experiment == 'Darknet':
         train_set, test_set, coord_set, nid_train_set, nid_test_x, nid_test_y, num_inputs, num_outputs = \
             data_pre_process(rank, size, train_pct, train_bs, test_bs, coordination_size)
+
+    if rank == 0:
+        print('Finished Data Preprocessing...')
 
     # add in coordination set for regular training
     reg_train_set = nid_train_set.concatenate(coord_set)
@@ -214,13 +221,18 @@ if __name__ == "__main__":
 
     # Output Path
     outputPath = 'Results/' + args.experiment
-    saveFolder_reg = outputPath + '/' + 'RegularTrain' + '-' + str(size) + 'Worker-' + str(epochs) + \
-                     'Epochs-' + 'NoPenalty-' + str(coordination_size) + 'Csize-' + str(args.graph_type)
-    saveFolder_middle = outputPath + '/' + 'MIDDLE' + '-' + str(size) + 'Worker-' + str(epochs) + \
-                        'Epochs-' + str(L1) + 'L1Penalty-' + str(L2) + 'L2Penalty-' + str(
-        coordination_size) + 'Csize-' + str(args.graph_type)
+    saveFolder_middle = outputPath + '/' + 'MIDDLE' + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
+                        str(L1) + 'L1Penalty-' + str(L2) + 'L2Penalty-' + str(coordination_size) + 'Csize-' + \
+                        str(args.graph_type)
 
     recorder_middle = Recorder('MIDDLE', size, rank, args.graph_type, epochs, L1, L2, coordination_size, outputPath)
+
+    if rank == 0:
+        with open(outputPath + '/ExpDescription', 'w') as f:
+            f.write(str(args) + '\n')
+        print('Beginning Training...')
+
+    mpi.Barrier()
 
     # run MIDDLE training
     middle_train(middle_model, communicator, rank, lossF, optimizer, nid_train_set, coord_set, nid_test_x,
