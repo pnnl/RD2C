@@ -237,6 +237,9 @@ if __name__ == "__main__":
         if rank == 0:
             with open(saveFolder_middle + '/ExpDescription', 'w') as f:
                 f.write(str(args) + '\n')
+                f.write('L1 = ' + str(L1) + '\n')
+                f.write('L2 = ' + str(L2) + '\n')
+                f.write('L3 = ' + str(L3) + '\n')
             print('Beginning Training...')
 
         mpi.Barrier()
