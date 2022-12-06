@@ -227,6 +227,8 @@ if __name__ == "__main__":
 
     recorder_middle = Recorder('MIDDLE', size, rank, args.graph_type, epochs, L1, L2, coordination_size, outputPath)
 
+    mpi.Barrier()
+
     if rank == 0:
         with open(saveFolder_middle + '/ExpDescription', 'w') as f:
             f.write(str(args) + '\n')
