@@ -56,7 +56,8 @@ if __name__ == "__main__":
     graph_type = 'ring'
     L1 = 1./3
     L3_vals = [0, 1. / 10, 1. / 8, 1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
-
+    y_loss = []
+    y_acc = []
     for trial in range(len(L3_vals)):
         L3 = L3_vals[trial]
         L2 = 1 - (L1 + L3)
@@ -67,8 +68,22 @@ if __name__ == "__main__":
 
         test_loss_data = unpack_data(folder)
         test_acc_data = unpack_data(folder, datatype='test-acc.log')
+        y_loss.append(test_loss_data.mean(axis=1))
+        y_acc.append(test_acc_data.mean(axis=1))
+
         avg_worker_test_loss = np.mean(test_loss_data, axis=1)
         avg_worker_test_acc = np.mean(test_acc_data, axis=1)
         print('L3 Value: ' + str(L3))
+        print('Test Loss')
         print(avg_worker_test_loss)
+        print('Test Accuracy')
         print(avg_worker_test_acc)
+
+    y_loss = np.stack(y_loss, axis=0)
+    y_mean, y_min, y_max = generate_confidence_interval(y_loss)
+    # print(y_min)
+    # print(y_max)
+
+    #plt.plot(range(1, epochs+1), y_mean)#, label=labels[ind % len(labels)] + exp_type[2], alpha=0.8, color=colors[ind])
+    #plt.fill_between(range(1, epochs+1), y_min, y_max, alpha=0.2)#, color=colors[ind])
+    #plt.show()

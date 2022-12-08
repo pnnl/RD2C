@@ -226,11 +226,11 @@ if __name__ == "__main__":
 
         # Output Path
         outputPath = 'Results/' + args.experiment
-        saveFolder_middle = outputPath + '/' + 'MIDDLE' + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
+        saveFolder_middle = outputPath + '/' + args.name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
                             str(L1) + 'L1Penalty-' + str(L2) + 'L2Penalty-' + str(coordination_size) + 'Csize-' + \
                             str(args.graph_type)
 
-        recorder_middle = Recorder('MIDDLE', size, rank, args.graph_type, epochs, L1, L2, coordination_size, outputPath)
+        recorder_middle = Recorder(args.name, size, rank, args.graph_type, epochs, L1, L2, coordination_size, outputPath)
 
         mpi.Barrier()
 
