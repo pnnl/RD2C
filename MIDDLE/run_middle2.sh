@@ -11,4 +11,4 @@ module load gcc/8.1.0
 module load openmpi/4.1.4
 source /people/born669/middle/bin/activate
 
-mpirun -n 10 python MIDDLE_Ablation.py --name MIDDLE-2 --randomSeed 4282 --epochs 30
+mpirun -n 10 python MIDDLE_Ablation.py --name MIDDLE-2 --randomSeed 4282 --epochs 30 --L3 0.1

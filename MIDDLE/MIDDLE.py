@@ -207,8 +207,10 @@ if __name__ == "__main__":
 
     # L1, L2, L3 penalties
     L1 = args.L1
-    L2 = args.L2
-    L3 = 1 - (L1 + L2)
+    L3 = args.L3
+    L2 = 1 - (L1 + L3)
+    if rank == 0:
+        print('L3 Value = %f' % L3)
 
     # epochs
     epochs = args.epochs
