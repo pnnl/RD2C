@@ -218,19 +218,21 @@ if __name__ == "__main__":
 
     L1 = 1./3
     L3_vals = [0, 1. / 10, 1. / 8, 1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
+    name = args.name
 
     # run MIDDLE ablation
     for trial in range(len(L3_vals)):
         L3 = L3_vals[trial]
         L2 = 1 - (L1 + L3)
+        print('L3 Value = %f' % L3)
 
         # Output Path
         outputPath = 'Results/' + args.experiment
-        saveFolder_middle = outputPath + '/' + args.name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
+        saveFolder_middle = outputPath + '/' + name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
                             str(L1) + 'L1Penalty-' + str(L2) + 'L2Penalty-' + str(coordination_size) + 'Csize-' + \
                             str(args.graph_type)
 
-        recorder_middle = Recorder(args.name, size, rank, args.graph_type, epochs, L1, L2, coordination_size, outputPath)
+        recorder_middle = Recorder(name, size, rank, args.graph_type, epochs, L1, L2, coordination_size, outputPath)
 
         mpi.Barrier()
 
@@ -251,7 +253,7 @@ if __name__ == "__main__":
         mpi.Barrier()
 
         # Plot confusion matrix
-        middle_predictions = middle_model.predict(nid_test_x)
+        middle_predictions = middle_model.predict(nid_test_x, verbose=0)
 
         # middle training
         pred_middle = tf.math.argmax(middle_predictions, axis=1)

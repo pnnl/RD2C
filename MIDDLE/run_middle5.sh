@@ -4,7 +4,7 @@
 #SBATCH -t 1:30:00
 #SBATCH -N 1
 #SBATCH -n 10
-#SBATCH -J middle_ablation
+#SBATCH -J middle_ablation-5
 
 module purge
 module load gcc/8.1.0
