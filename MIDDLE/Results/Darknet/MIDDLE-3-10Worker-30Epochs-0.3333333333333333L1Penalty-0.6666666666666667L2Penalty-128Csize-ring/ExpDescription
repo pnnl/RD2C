@@ -1,0 +1,1 @@
+Namespace(name='MIDDLE-3', experiment='Darknet', graph_type='ring', lr=0.01, epochs=30, bs=64, train_split=0.8, coord_size=128, L1=0.3333333333333333, L2=0.3333333333333333, L3=0.0, weight_type='uniform-symmetric', randomSeed=42)
