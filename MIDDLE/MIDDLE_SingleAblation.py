@@ -11,6 +11,7 @@ from misc import Recorder
 from network import Graph
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 
 def get_model_architecture(model):
