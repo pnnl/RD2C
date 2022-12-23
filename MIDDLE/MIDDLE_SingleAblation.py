@@ -117,7 +117,7 @@ if __name__ == "__main__":
     optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
 
     # Create MIDDLE model (same architecture and weights) for comparison
-    save_path = 'initial_model_rank{}.h5'
+    save_path = args.name+'-initial_model_rank{}.h5'
     middle_model.save_weights(save_path.format(rank))
 
     # load model
