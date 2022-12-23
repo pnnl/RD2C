@@ -223,13 +223,14 @@ if __name__ == "__main__":
     # run MIDDLE ablation
     for run in range(1, runs):
 
-        # load initial weights
-        middle_model.set_weights(initial_weights)
-
         # initialize random seed
         np.random.seed(run)
         tf.random.set_seed(run + 1)
         for trial in range(len(L3_vals)):
+
+            # load initial weights
+            middle_model.set_weights(initial_weights)
+
             L3 = L3_vals[trial]
             L2 = 1 - (L1 + L3)
             if rank == 0:
