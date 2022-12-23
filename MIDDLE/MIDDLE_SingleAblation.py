@@ -73,7 +73,7 @@ def data_pre_process(rank, size, train_pct, train_bs, test_bs, coordination_size
 
     # create coordination set
     coord_x = tf.convert_to_tensor(normalized_df.iloc[:coordination_size, :])
-    coord_y = tf.convert_to_tensor(labels[:coordination_size])
+    coord_y = tf.convert_to_tensor(labels.iloc[:coordination_size])
     coordination_set = tf.data.Dataset.from_tensor_slices((coord_x, coord_y)).batch(coordination_size)
 
     # get data info
@@ -82,23 +82,23 @@ def data_pre_process(rank, size, train_pct, train_bs, test_bs, coordination_size
 
     # Split training data amongst workers
     worker_data = np.array_split(normalized_df.iloc[coordination_size:, :], size)[rank]
-    worker_label = np.array_split(labels[coordination_size:], size)[rank]
+    worker_label = np.array_split(labels.iloc[coordination_size:], size)[rank]
 
     # create train/test split
     num_data = len(worker_label)
     num_train = int(num_data * train_pct)
     # train
     train_x = tf.convert_to_tensor(worker_data.iloc[:num_train, :])
-    train_y = tf.convert_to_tensor(worker_label[:num_train])
+    train_y = tf.convert_to_tensor(worker_label.iloc[:num_train])
     train_set = tf.data.Dataset.from_tensor_slices((train_x, train_y)).batch(train_bs)
     # test
     test_x = tf.convert_to_tensor(worker_data.iloc[num_train:, :])
-    test_y = tf.convert_to_tensor(worker_label[num_train:])
+    test_y = tf.convert_to_tensor(worker_label.iloc[num_train:])
     test_set = tf.data.Dataset.from_tensor_slices((test_x, test_y)).batch(test_bs)
 
     # non-iid Dataset
     # create train/test split
-    nid_num_data = len(labels[coordination_size:])
+    nid_num_data = len(labels.iloc[coordination_size:])
     nid_num_train = int(nid_num_data * train_pct)
     normalized_df['Label'] = labels
 
