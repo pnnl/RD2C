@@ -205,8 +205,6 @@ if __name__ == "__main__":
     # model architecture
     layer_shapes, layer_sizes = get_model_architecture(middle_model)
 
-
-
     # epochs
     epochs = args.epochs
 
@@ -214,7 +212,8 @@ if __name__ == "__main__":
     optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
 
     # Create MIDDLE model (same architecture and weights) for comparison
-    middle_model_initial = tf.keras.models.clone_model(middle_model)
+    initial_weights = middle_model.get_weights()
+    # middle_model_initial = tf.keras.models.clone_model(middle_model)
 
     L1 = 1./3
     L3_vals = [0, 1. / 10, 1. / 8, 1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
@@ -222,12 +221,18 @@ if __name__ == "__main__":
 
     # run MIDDLE ablation
     for trial in range(len(L3_vals)):
+
+        # load initial weights
+        middle_model.set_weights(initial_weights)
+
         L3 = L3_vals[trial]
         L2 = 1 - (L1 + L3)
-        print('L3 Value = %f' % L3)
+        if rank == 0:
+            print('L3 Value = %f' % L3)
 
         # Output Path
         outputPath = 'Results/' + args.experiment
+        name = args.name + str(run)
         saveFolder_middle = outputPath + '/' + name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
                             str(L1) + 'L1Penalty-' + str(L2) + 'L2Penalty-' + str(coordination_size) + 'Csize-' + \
                             str(args.graph_type)
@@ -242,6 +247,7 @@ if __name__ == "__main__":
                 f.write('L1 = ' + str(L1) + '\n')
                 f.write('L2 = ' + str(L2) + '\n')
                 f.write('L3 = ' + str(L3) + '\n')
+                f.write('Seed = ' + str(run) + '\n')
             print('Beginning Training...')
 
         mpi.Barrier()
@@ -276,5 +282,3 @@ if __name__ == "__main__":
         plt.savefig(saveFolder_middle + '/Regular-r' + str(rank) + '.pdf', format="pdf")
 
         mpi.Barrier()
-
-        middle_model = tf.keras.models.clone_model(middle_model_initial)

@@ -218,14 +218,14 @@ if __name__ == "__main__":
     L1 = 1./3
     # L3_vals = [0, 1. / 10, 1. / 8, 1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
     L3_vals = [1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3, 0, 1. / 10, 1. / 8]
-    runs = 2
+    runs = 5
 
     # run MIDDLE ablation
-    for run in range(1, runs):
+    for run in range(1, runs+1):
 
         # initialize random seed
-        np.random.seed(run)
-        tf.random.set_seed(run + 1)
+        np.random.seed(args.randomSeed + run - 1)
+        tf.random.set_seed(args.randomSeed + run - 1)
         for trial in range(len(L3_vals)):
 
             # load initial weights
