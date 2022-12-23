@@ -73,8 +73,8 @@ def data_pre_process(rank, size, train_pct, train_bs, test_bs, coordination_size
 
     # create coordination set
     coord_x = tf.convert_to_tensor(normalized_df.iloc[:coordination_size, :])
-    coord_y = tf.convert_to_tensor(labels[:coordination_size])
-    coordination_set = tf.data.Dataset.from_tensor_slices((coord_x, coord_y)).batch(coordination_size)
+    coord_y = tf.convert_to_tensor(labels.iloc[:coordination_size])
+    # coordination_set = tf.data.Dataset.from_tensor_slices((coord_x, coord_y)).batch(coordination_size)
 
     # get data info
     num_inputs = len(normalized_df.columns.to_list())
@@ -82,23 +82,23 @@ def data_pre_process(rank, size, train_pct, train_bs, test_bs, coordination_size
 
     # Split training data amongst workers
     worker_data = np.array_split(normalized_df.iloc[coordination_size:, :], size)[rank]
-    worker_label = np.array_split(labels[coordination_size:], size)[rank]
+    worker_label = np.array_split(labels.iloc[coordination_size:], size)[rank]
 
     # create train/test split
     num_data = len(worker_label)
     num_train = int(num_data * train_pct)
     # train
     train_x = tf.convert_to_tensor(worker_data.iloc[:num_train, :])
-    train_y = tf.convert_to_tensor(worker_label[:num_train])
+    train_y = tf.convert_to_tensor(worker_label.iloc[:num_train])
     train_set = tf.data.Dataset.from_tensor_slices((train_x, train_y)).batch(train_bs)
     # test
     test_x = tf.convert_to_tensor(worker_data.iloc[num_train:, :])
-    test_y = tf.convert_to_tensor(worker_label[num_train:])
+    test_y = tf.convert_to_tensor(worker_label.iloc[num_train:])
     test_set = tf.data.Dataset.from_tensor_slices((test_x, test_y)).batch(test_bs)
 
     # non-iid Dataset
     # create train/test split
-    nid_num_data = len(labels[coordination_size:])
+    nid_num_data = len(labels.iloc[coordination_size:])
     nid_num_train = int(nid_num_data * train_pct)
     normalized_df['Label'] = labels
 
@@ -120,7 +120,7 @@ def data_pre_process(rank, size, train_pct, train_bs, test_bs, coordination_size
     nid_test_x = tf.convert_to_tensor(nid_test_df)
     nid_test_y = tf.convert_to_tensor(test_labels)
 
-    return train_set, test_set, coordination_set, nid_train_set, nid_test_x, nid_test_y, num_inputs, num_outputs
+    return train_set, test_set, coord_x, coord_y, nid_train_set, nid_test_x, nid_test_y, num_inputs, num_outputs
 
 
 if __name__ == "__main__":
@@ -159,21 +159,21 @@ if __name__ == "__main__":
     coordination_size = args.coord_size
 
     # preprocess and split data amongst workers
-    train_set =None; test_set = None; coord_set = None; nid_train_set = None; nid_test_x = None; nid_test_y = None
-    num_inputs = None; num_outputs = None
+    train_set = None; test_set = None; coord_x = None; coord_y = None; nid_train_set = None; nid_test_x = None
+    nid_test_y = None; num_inputs = None; num_outputs = None
 
     if rank == 0:
         print('Beginning Data Preprocessing...')
 
     if args.experiment == 'Darknet':
-        train_set, test_set, coord_set, nid_train_set, nid_test_x, nid_test_y, num_inputs, num_outputs = \
+        train_set, test_set, coord_x, coord_y, nid_train_set, nid_test_x, nid_test_y, num_inputs, num_outputs = \
             data_pre_process(rank, size, train_pct, train_bs, test_bs, coordination_size)
 
     if rank == 0:
         print('Finished Data Preprocessing...')
 
     # add in coordination set for regular training
-    reg_train_set = nid_train_set.concatenate(coord_set)
+    # reg_train_set = nid_train_set.concatenate(coord_set)
 
     # initialize graph
     G = Graph(rank, size, mpi, args.graph_type, weight_type=args.weight_type, num_c=None)
@@ -260,9 +260,9 @@ if __name__ == "__main__":
 
             mpi.Barrier()
 
-            middle_train(middle_model, communicator, rank, lossF, optimizer, nid_train_set, coord_set, nid_test_x,
-                         nid_test_y, epochs, coordination_size, num_outputs, layer_shapes, layer_sizes, recorder_middle,
-                         L1, L2, L3)
+            middle_train(middle_model, communicator, rank, lossF, optimizer, nid_train_set, coord_x, coord_y,
+                         nid_test_x, nid_test_y, epochs, coordination_size, num_outputs, layer_shapes, layer_sizes,
+                         recorder_middle, L1, L2, L3)
 
             mpi.Barrier()
 
