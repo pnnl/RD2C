@@ -205,8 +205,6 @@ if __name__ == "__main__":
     # model architecture
     layer_shapes, layer_sizes = get_model_architecture(middle_model)
 
-
-
     # epochs
     epochs = args.epochs
 
@@ -220,9 +218,10 @@ if __name__ == "__main__":
     L1 = 1./3
     # L3_vals = [0, 1. / 10, 1. / 8, 1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
     L3_vals = [1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3, 0, 1. / 10, 1. / 8]
+    runs = 2
 
     # run MIDDLE ablation
-    for run in range(1, 6):
+    for run in range(1, runs):
 
         # load initial weights
         middle_model.set_weights(initial_weights)

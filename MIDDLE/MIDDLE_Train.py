@@ -8,13 +8,12 @@ from comm_weights import flatten_weights, unflatten_weights
 
 
 # Implement Custom Loss Function
-@tf.function
+# @tf.function
 def consensus_loss(y_true, y_pred, z, L2, L3):
     # local error
     local_loss = L2 * tf.keras.losses.SparseCategoricalCrossentropy()(y_true, y_pred)
     # consensus error
     consensus_loss = L3 * tf.keras.losses.CategoricalCrossentropy()(z, y_pred)
-
     return local_loss + consensus_loss
 
 
@@ -31,6 +30,28 @@ def average_models(model, local_update, layer_shapes, layer_sizes, L1, L2, L3):
     next_weights = unflatten_weights(L1 * local_weights + (L2 + L3) * coordinate_weights, layer_shapes, layer_sizes)
     # update model weights to average
     model.set_weights(next_weights)
+
+
+# @tf.function
+def train_step(model, optimizer, lossF, data, target):
+    # Minibatch Update
+    with tf.GradientTape() as tape:
+        y_p = model(data, training=True)
+        loss_val = lossF(y_true=target, y_pred=y_p)
+    grads = tape.gradient(loss_val, model.trainable_weights)
+    optimizer.apply_gradients(zip(grads, model.trainable_variables))
+    return y_p
+
+
+# @tf.function
+def consensus_step(model, optimizer, coordination_dataset, z, L2, L3):
+    for (c_data, c_target) in coordination_dataset:
+        with tf.GradientTape() as tape:
+            c_yp = model(c_data, training=True)
+            loss_val = consensus_loss(y_true=c_target, y_pred=c_yp,
+                                      z=z, L2=L2, L3=L3)
+        grads = tape.gradient(loss_val, model.trainable_weights)
+        optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
 
 def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coordination_dataset, test_x,
@@ -71,11 +92,13 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
             non_comp += (time.time() - t1)
 
             # Minibatch Update
-            with tf.GradientTape() as tape:
-                y_p = model(data, training=True)
-                loss_val = lossF(y_true=target, y_pred=y_p)
-            grads = tape.gradient(loss_val, model.trainable_weights)
-            optimizer.apply_gradients(zip(grads, model.trainable_variables))
+            y_p = train_step(model, optimizer, lossF, data, target)
+
+            #with tf.GradientTape() as tape:
+            #    y_p = model(data, training=True)
+            #    loss_val = lossF(y_true=target, y_pred=y_p)
+            #grads = tape.gradient(loss_val, model.trainable_weights)
+            #optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
             t1 = time.time()
             acc_metric.update_state(target, y_p)
@@ -90,14 +113,17 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
             non_comp += (time.time() - t1)
 
             # Consensus Training
-            for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
-                with tf.GradientTape() as tape:
-                    c_yp = model(c_data, training=True)
-                    loss_val = consensus_loss(y_true=c_target, y_pred=c_yp,
-                                              z=recv_avg_pred[:, c_batch_idx].reshape(coord_batch_size, num_outputs),
-                                              L2=loss_L2, L3=loss_L3)
-                grads = tape.gradient(loss_val, model.trainable_weights)
-                optimizer.apply_gradients(zip(grads, model.trainable_variables))
+            z = recv_avg_pred[:, 0].reshape(coord_batch_size, num_outputs)
+            consensus_step(model, optimizer, coordination_dataset, z, loss_L2, loss_L3)
+
+            #for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
+            #    with tf.GradientTape() as tape:
+            #        c_yp = model(c_data, training=True)
+            #        loss_val = consensus_loss(y_true=c_target, y_pred=c_yp,
+            #                                  z=recv_avg_pred[:, c_batch_idx].reshape(coord_batch_size, num_outputs),
+            #                                  L2=loss_L2, L3=loss_L3)
+            #    grads = tape.gradient(loss_val, model.trainable_weights)
+            #    optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
             # update model weights
             average_models(model, local_model, layer_shapes, layer_sizes, L1, L2, L3)
