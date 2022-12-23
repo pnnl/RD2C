@@ -44,17 +44,16 @@ def train_step(model, optimizer, lossF, data, target):
 
 
 # @tf.function
-def consensus_step(model, optimizer, coordination_dataset, z, L2, L3):
-    for (c_data, c_target) in coordination_dataset:
-        with tf.GradientTape() as tape:
-            c_yp = model(c_data, training=True)
-            loss_val = consensus_loss(y_true=c_target, y_pred=c_yp,
-                                      z=z, L2=L2, L3=L3)
-        grads = tape.gradient(loss_val, model.trainable_weights)
-        optimizer.apply_gradients(zip(grads, model.trainable_variables))
+def consensus_step(model, optimizer, c_data, c_target, z, L2, L3):
+    with tf.GradientTape() as tape:
+        c_yp = model(c_data, training=True)
+        loss_val = consensus_loss(y_true=c_target, y_pred=c_yp,
+                                  z=z, L2=L2, L3=L3)
+    grads = tape.gradient(loss_val, model.trainable_weights)
+    optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
 
-def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coordination_dataset, test_x,
+def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coordination_x, coordination_y, test_x,
                  test_y, epochs, coord_batch_size, num_outputs, layer_shapes, layer_sizes, recorder,
                  L1=0.5, L2=0.25, L3=0.25):
     acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
@@ -78,9 +77,11 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
 
             # Forward Pass of Coordination Set (get z)
             send_predicted = np.zeros((num_outputs * coord_batch_size, 1), dtype=np.float32)
-            for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
-                pred = model(c_data, training=True)
-                send_predicted[:, c_batch_idx] = pred.numpy().flatten()
+            pred = model(coordination_x, training=True)
+            send_predicted[:, 0] = pred.numpy().flatten()
+            #for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
+            #    pred = model(c_data, training=True)
+            #    send_predicted[:, c_batch_idx] = pred.numpy().flatten()
 
             t1 = time.time()
             # Communication Process Here
@@ -114,7 +115,7 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
 
             # Consensus Training
             z = recv_avg_pred[:, 0].reshape(coord_batch_size, num_outputs)
-            consensus_step(model, optimizer, coordination_dataset, z, loss_L2, loss_L3)
+            consensus_step(model, optimizer, coordination_x, coordination_y, z, loss_L2, loss_L3)
 
             #for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
             #    with tf.GradientTape() as tape:
