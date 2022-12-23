@@ -232,8 +232,7 @@ if __name__ == "__main__":
 
         # Output Path
         outputPath = 'Results/' + args.experiment
-        name = args.name + str(run)
-        saveFolder_middle = outputPath + '/' + name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
+        saveFolder_middle = outputPath + '/' + args.name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
                             str(L1) + 'L1Penalty-' + str(L2) + 'L2Penalty-' + str(coordination_size) + 'Csize-' + \
                             str(args.graph_type)
 
