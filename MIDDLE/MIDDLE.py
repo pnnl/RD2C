@@ -122,7 +122,7 @@ if __name__ == "__main__":
     optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
 
     # Create MIDDLE model (same architecture and weights) for comparison
-    middle_model_initial = tf.keras.models.clone_model(middle_model)
+    # middle_model_initial = tf.keras.models.clone_model(middle_model)
 
     # Output Path
     outputPath = 'Results/' + args.experiment
