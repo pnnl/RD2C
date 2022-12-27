@@ -13,7 +13,6 @@ module load cuda/11.4
 source /people/born669/middle/bin/activate
 
 mpirun -n 8 python MIDDLE.py --name MIDDLE-1 --randomSeed 4282 --epochs 50 --L3 0.5
-mpirun -n 8 python MIDDLE.py --name MIDDLE-1 --randomSeed 4282 --epochs 50 --L3 0.8666666666666666
 mpirun -n 8 python MIDDLE.py --name MIDDLE-1 --randomSeed 4282 --epochs 50 --L3 0.6666666666666666
 mpirun -n 8 python MIDDLE.py --name MIDDLE-1 --randomSeed 4282 --epochs 50 --L3 0.6
 mpirun -n 8 python MIDDLE.py --name MIDDLE-1 --randomSeed 4282 --epochs 50
