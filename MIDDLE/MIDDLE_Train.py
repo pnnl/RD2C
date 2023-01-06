@@ -81,9 +81,6 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
             send_predicted = np.zeros((num_outputs * coord_batch_size, 1), dtype=np.float32)
             pred = model(coordination_x, training=True)
             send_predicted[:, 0] = pred.numpy().flatten()
-            #for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
-            #    pred = model(c_data, training=True)
-            #    send_predicted[:, c_batch_idx] = pred.numpy().flatten()
 
             t1 = time.time()
             # Communication Process Here
@@ -96,12 +93,6 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
 
             # Minibatch Update
             y_p = train_step(model, optimizer, lossF, data, target)
-
-            #with tf.GradientTape() as tape:
-            #    y_p = model(data, training=True)
-            #    loss_val = lossF(y_true=target, y_pred=y_p)
-            #grads = tape.gradient(loss_val, model.trainable_weights)
-            #optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
             t1 = time.time()
             acc_metric.update_state(target, y_p)
@@ -118,15 +109,6 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
             # Consensus Training
             z = recv_avg_pred[:, 0].reshape(coord_batch_size, num_outputs)
             consensus_step(model, optimizer, coordination_x, coordination_y, z, loss_L2, loss_L3)
-
-            #for c_batch_idx, (c_data, c_target) in enumerate(coordination_dataset):
-            #    with tf.GradientTape() as tape:
-            #        c_yp = model(c_data, training=True)
-            #        loss_val = consensus_loss(y_true=c_target, y_pred=c_yp,
-            #                                  z=recv_avg_pred[:, c_batch_idx].reshape(coord_batch_size, num_outputs),
-            #                                  L2=loss_L2, L3=loss_L3)
-            #    grads = tape.gradient(loss_val, model.trainable_weights)
-            #    optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
             # update model weights
             average_models(model, local_model, layer_shapes, layer_sizes, L1, L2, L3)

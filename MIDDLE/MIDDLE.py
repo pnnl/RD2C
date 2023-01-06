@@ -10,6 +10,7 @@ from communication import DecentralizedNoModelSGD
 from misc import Recorder
 from network import Graph
 import os
+import tikzplotlib
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 
@@ -165,5 +166,7 @@ if __name__ == "__main__":
                 annot=True, fmt='g')
     plt.xlabel('Prediction')
     plt.ylabel('True Label')
-    plt.title('MIDDLE Confusion Matrix for Worker %d on CIC-Darknet2020 Data' % (rank + 1))
-    plt.savefig(saveFolder_middle + '/Regular-r' + str(rank) + '.pdf', format="pdf")
+    fname = saveFolder_middle + '/r' + str(rank)
+    tikzplotlib.save(fname + ".tex")
+    # plt.title('MIDDLE Confusion Matrix for Worker %d on CIC-Darknet2020 Data' % (rank + 1))
+    plt.savefig(fname + '.pdf', format="pdf")
