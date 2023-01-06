@@ -78,7 +78,7 @@ if __name__ == "__main__":
     # reg_train_set = nid_train_set.concatenate(coord_set)
 
     # initialize graph
-    G = Graph(rank, size, mpi, args.graph_type, weight_type=args.weight_type, num_c=None)
+    G = Graph(rank, size, mpi, args.graph_type, weight_type=args.weight_type)
 
     # initialize communicator
     communicator = DecentralizedNoModelSGD(rank, size, mpi, G)
