@@ -13,7 +13,9 @@ def consensus_loss(y_true, y_pred, z, L2, L3):
     # local error
     local_loss = L2 * tf.keras.losses.SparseCategoricalCrossentropy()(y_true, y_pred)
     # consensus error
-    consensus_loss = L3 * tf.keras.losses.CategoricalCrossentropy()(z, y_pred)
+    # consensus_loss = L3 * tf.keras.losses.CategoricalCrossentropy()(z, y_pred)
+    consensus_loss = L3 * tf.keras.losses.MeanSquaredError()(z, y_pred)
+
     return local_loss + consensus_loss
 
 

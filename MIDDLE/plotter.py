@@ -54,13 +54,14 @@ if __name__ == "__main__":
     workers = 8
     epochs = 50
     coordination_size = 128
-    graph_type = 'ring'
-    resultFolder = 'Results/Darknet/8WorkerRing/MIDDLE-'
+    # graph_type = 'ring'
+    # resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerRing/MIDDLE-'
+    graph_type = 'fully-connected'
+    resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerFC/MIDDLE-'
+
     L1 = 1./3
-    # L3_vals = [0, 1. / 10, 1. / 8, 1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
-    # L3_vals = [0, 1. / 10, 7./40, 1. / 4, 1. / 3, 1. / 2, 2. / 3]
-    L3_vals = [1. / 20, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
-    # L3_vals = [0, 1./20, 1./10, 1./4, 1./3, 1./2, 3./5, 2./3]
+    # L3_vals = [0, 1. / 20, 1. / 10, 1./6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
+    L3_vals = [0, 1. / 20, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
     runs = 6
     plt.figure(1)
     for ind, val in enumerate(range(len(L3_vals))):
@@ -91,7 +92,7 @@ if __name__ == "__main__":
         y_mean, y_min, y_max = generate_confidence_interval(y_loss)
         y_mean_a, y_min_a, y_max_a = generate_confidence_interval(y_acc)
         # mylegend = r'$\lambda_3 =$' + str(L3)
-        mylegend = 'L3 =' + str(L3)[0:5]
+        mylegend = 'L3 = ' + str(L3)[0:5]
         plt.subplot(211)
         plt.plot(range(1, epochs+1), y_mean, label=mylegend, alpha=0.8) #, color=colors[ind])
         plt.fill_between(range(1, epochs+1), y_min, y_max, alpha=0.2)#, color=colors[ind])
@@ -104,7 +105,7 @@ if __name__ == "__main__":
     plt.xlabel('Epoch')
     plt.ylabel('Test Loss')
     plt.grid()
-    plt.xlim([1, 30])
+    plt.xlim([1, 50])
     fig = plt.gcf()
     fig.set_size_inches(18.5, 18.5)
 
@@ -113,7 +114,7 @@ if __name__ == "__main__":
     plt.xlabel('Epoch')
     plt.ylabel('Test Accuracy')
     plt.grid()
-    plt.xlim([1, 30])
+    plt.xlim([1, 50])
     fig = plt.gcf()
     fig.set_size_inches(18.5, 10.5)
     saveFilename = "test-ablation-" + str(workers) + graph_type + ".pdf"

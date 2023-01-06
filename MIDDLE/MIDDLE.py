@@ -83,7 +83,7 @@ if __name__ == "__main__":
     communicator = DecentralizedNoModelSGD(rank, size, mpi, G)
 
     #  MIDDLE model
-    if rank == 0 or rank == 1:
+    if rank < int(size/2):
         middle_model = tf.keras.Sequential()
         middle_model.add(tf.keras.layers.Dense(128, activation='relu', input_shape=(num_inputs,)))
         middle_model.add(tf.keras.layers.Dense(256, activation='relu'))
@@ -127,10 +127,9 @@ if __name__ == "__main__":
     # Output Path
     outputPath = 'Results/' + args.experiment
     saveFolder_middle = outputPath + '/' + args.name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
-                        str(L1) + 'L1Penalty-' + str(L2) + 'L2Penalty-' + str(coordination_size) + 'Csize-' + \
-                        str(args.graph_type)
+                        str(L3) + 'L3Penalty-' + str(coordination_size) + 'Csize-' + str(args.graph_type)
 
-    recorder_middle = Recorder(args.name, size, rank, args.graph_type, epochs, L1, L2, coordination_size, outputPath)
+    recorder_middle = Recorder(args.name, size, rank, args.graph_type, epochs, L1, L3, coordination_size, outputPath)
 
     mpi.Barrier()
 

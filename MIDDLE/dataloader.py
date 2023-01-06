@@ -50,6 +50,8 @@ def darknet_data(rank, size, train_pct, train_bs, test_bs, coordination_size):
     # normalize the feature dataframe
     normalized_df = non_normalized_df.apply(lambda x: (x - x.min()) / (x.max() - x.min()))
 
+    # print(raw_df['Label'].value_counts())
+
     # create coordination set
     coord_x = tf.convert_to_tensor(normalized_df.iloc[:coordination_size, :])
     coord_y = tf.convert_to_tensor(labels.iloc[:coordination_size])
