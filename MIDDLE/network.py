@@ -4,7 +4,7 @@ import networkx as nx
 
 class Graph:
 
-    def __init__(self, rank, size, comm, graph, weight_type=None, p=0.5, num_c=None):
+    def __init__(self, rank, size, comm, graph, weight_type=None, p=0.5, num_c=4):
 
         # Initialize MPI variables
         self.rank = rank  # index of worker
