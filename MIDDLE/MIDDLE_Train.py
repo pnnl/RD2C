@@ -9,12 +9,12 @@ from comm_weights import flatten_weights, unflatten_weights
 
 # Implement Custom Loss Function
 # @tf.function
-def consensus_loss(y_true, y_pred, z, L2, L3):
+def consensus_loss(y_true, y_pred, z, sw, lam2, lam3):
     # local error
-    local_loss = L2 * tf.keras.losses.SparseCategoricalCrossentropy()(y_true, y_pred)
+    local_loss = lam2 * tf.keras.losses.SparseCategoricalCrossentropy()(y_true, y_pred)
     # consensus error
     # consensus_loss = L3 * tf.keras.losses.CategoricalCrossentropy()(z, y_pred)
-    consensus_loss = L3 * tf.keras.losses.MeanSquaredError()(z, y_pred)
+    consensus_loss = lam3 * tf.keras.losses.MeanSquaredError()(z, y_pred*(1-sw))
 
     return local_loss + consensus_loss
 
@@ -24,12 +24,13 @@ def set_learning_rate(optimizer, epoch):
         optimizer.lr = optimizer.lr * tf.math.exp(-0.1)
 
 
-def average_models(model, local_update, layer_shapes, layer_sizes, L1, L2, L3):
+def average_models(model, local_update, layer_shapes, layer_sizes, lam1, lam2, lam3):
     model_weights = model.get_weights()
     # flatten tensor weights
     coordinate_weights = flatten_weights(model_weights)
     local_weights = flatten_weights(local_update)
-    next_weights = unflatten_weights(L1 * local_weights + (L2 + L3) * coordinate_weights, layer_shapes, layer_sizes)
+    next_weights = unflatten_weights(lam1 * local_weights + (lam2 + lam3) * coordinate_weights, layer_shapes,
+                                     layer_sizes)
     # update model weights to average
     model.set_weights(next_weights)
 
@@ -46,11 +47,11 @@ def train_step(model, optimizer, lossF, data, target):
 
 
 # @tf.function
-def consensus_step(model, optimizer, c_data, c_target, z, L2, L3):
+def consensus_step(model, optimizer, c_data, c_target, z, self_weight, lam2, lam3):
     with tf.GradientTape() as tape:
         c_yp = model(c_data, training=True)
         loss_val = consensus_loss(y_true=c_target, y_pred=c_yp,
-                                  z=z, L2=L2, L3=L3)
+                                  z=z, sw=self_weight, lam2=lam2, lam3=lam3)
     grads = tape.gradient(loss_val, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
@@ -84,7 +85,7 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
 
             t1 = time.time()
             # Communication Process Here
-            recv_avg_pred, c_time = communicator.average(send_predicted)
+            recv_avg_pred, self_weight, c_time = communicator.average(send_predicted)
             comm_time += c_time
 
             # save pre-batch model
@@ -108,7 +109,7 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
 
             # Consensus Training
             z = recv_avg_pred[:, 0].reshape(coord_batch_size, num_outputs)
-            consensus_step(model, optimizer, coordination_x, coordination_y, z, loss_L2, loss_L3)
+            consensus_step(model, optimizer, coordination_x, coordination_y, z, self_weight, loss_L2, loss_L3)
 
             # update model weights
             average_models(model, local_model, layer_shapes, layer_sizes, L1, L2, L3)

@@ -13,7 +13,7 @@ class Recorder(object):
         self.test_acc = list()
         self.rank = rank
         self.size = size
-        self.saveFolderName = outputPath + '/' + name + '-' + str(size) + 'Worker-' + str(epochs) + \
+        self.saveFolderName = outputPath + '/' + name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
                               str(l3) + 'L3Penalty-' + str(coord_size) + 'Csize-' + str(graph_type)
 
         if rank == 0 and not os.path.isdir(self.saveFolderName):
