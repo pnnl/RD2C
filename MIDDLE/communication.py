@@ -120,11 +120,6 @@ class DecentralizedNoModelSGD:
         self.comm.Barrier()
         tic = time.time()
 
-        # compute self weight according to degree
-        selfweight = 1 - np.sum(self.neighbor_weights)
-        # compute weighted average: (1-d*alpha)x_i + alpha * sum_j x_j, start with own weight
-        # avg_predictions = selfweight*predictions
-
         # compute weighted averaged over all neighbor models except one's own
         avg_predictions = np.zeros_like(predictions)
 
@@ -138,4 +133,4 @@ class DecentralizedNoModelSGD:
         self.comm.Barrier()
         toc = time.time()
 
-        return avg_predictions, selfweight, toc - tic
+        return avg_predictions, toc - tic

@@ -56,8 +56,12 @@ if __name__ == "__main__":
     coordination_size = 128
     #graph_type = 'ring'
     #resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerRing/MIDDLE-'
+
     graph_type = 'fully-connected'
     resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerFC/MIDDLE-'
+
+    # graph_type = 'clique-ring'
+    # resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerROC/MIDDLE-'
 
     L1 = 1./3
     # L3_vals = [0, 1. / 20, 1. / 10, 1./6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
