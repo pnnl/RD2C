@@ -78,6 +78,14 @@ class Graph:
             num_neighbors = len(self.neighbor_list)
             weights = (1 / self.size) * np.ones(num_neighbors)
 
+        elif weight_type == 'uniform-neighbor':
+            num_neighbors = len(self.neighbor_list)
+            weights = (1 / (num_neighbors + 1)) * np.ones(num_neighbors)
+
+        elif weight_type == 'uniform-neighbor-no-self-weight':
+            num_neighbors = len(self.neighbor_list)
+            weights = (1 / num_neighbors) * np.ones(num_neighbors)
+
         # Neighborhood uniform weights by default
         else:
             num_neighbors = len(self.neighbor_list)

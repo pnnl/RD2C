@@ -51,17 +51,18 @@ def unpack_data(directory_path, datatype='test-loss.log', epochs=10, num_workers
 
 if __name__ == "__main__":
 
-    workers = 8
+    workers = 16
     epochs = 50
     coordination_size = 128
-    # graph_type = 'ring'
-    # resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerRing/MIDDLE-'
-    graph_type = 'fully-connected'
-    resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerFC/MIDDLE-'
+    graph_type = 'ring'
+    resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerRing/MIDDLE-'
+    #graph_type = 'fully-connected'
+    #resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerFC/MIDDLE-'
 
     L1 = 1./3
     # L3_vals = [0, 1. / 20, 1. / 10, 1./6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
-    L3_vals = [0, 1. / 20, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
+    # L3_vals = [0.0, 1. / 20, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
+    L3_vals = [0.0, 1. / 20, 1. / 4, 1. / 3, 1. / 2]
     runs = 6
     plt.figure(1)
     for ind, val in enumerate(range(len(L3_vals))):
@@ -71,8 +72,7 @@ if __name__ == "__main__":
         L2 = 1 - (L1 + L3)
         for run in range(1, runs):
             folder = resultFolder + str(run) + '-' + str(workers) + 'Worker-' + str(epochs) + 'Epochs-' + \
-                                str(L1) + 'L1Penalty-' + str(L2) + 'L2Penalty-' + str(coordination_size) + 'Csize-' + \
-                                str(graph_type)
+                                str(L3) + 'L3Penalty-' + str(coordination_size) + 'Csize-' + str(graph_type)
 
             test_loss_data = unpack_data(folder, epochs=epochs, num_workers=workers)
             test_acc_data = unpack_data(folder, datatype='test-acc.log', epochs=epochs, num_workers=workers)
