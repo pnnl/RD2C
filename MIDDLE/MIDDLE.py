@@ -40,7 +40,7 @@ if __name__ == "__main__":
     parser.add_argument('--L1', default=1/3, type=float, help='train set loss weighting')
     parser.add_argument('--L2', default=1/3, type=float, help='coordination set loss weighting')
     parser.add_argument('--L3', default=1/3, type=float, help='coordination set alignment loss weighting')
-    parser.add_argument('--weight_type', default='uniform-neighbor', type=str, help='worker weightings')
+    parser.add_argument('--weight_type', default='uniform-neighbor-no-self-weight', type=str, help='worker weightings')
     parser.add_argument('--randomSeed', default=482, type=int, help='random seed')
 
     args = parser.parse_args()
