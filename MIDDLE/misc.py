@@ -3,7 +3,7 @@ import os
 
 
 class Recorder(object):
-    def __init__(self, name, size, rank, graph_type, epochs, l3, coord_size, outputPath):
+    def __init__(self, name, size, rank, graph_type, epochs, l3, coord_size, outputPath, save_folder_name=None):
         self.epoch_time = list()
         self.comp_time = list()
         self.comm_time = list()
@@ -13,8 +13,11 @@ class Recorder(object):
         self.test_acc = list()
         self.rank = rank
         self.size = size
-        self.saveFolderName = outputPath + '/' + name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
+        if save_folder_name is None:
+            self.saveFolderName = outputPath + '/' + name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
                               str(l3) + 'L3Penalty-' + str(coord_size) + 'Csize-' + str(graph_type)
+        else:
+            self.saveFolderName = save_folder_name
 
         if rank == 0 and not os.path.isdir(self.saveFolderName):
             os.mkdir(self.saveFolderName)

@@ -12,7 +12,7 @@ class DecentralizedSGD:
     For LD-SGD: Set i1 > 0 and i2 > 1
     """
 
-    def __init__(self, rank, size, comm, topology, layer_shapes, layer_sizes, i1, i2):
+    def __init__(self, rank, size, comm, topology, layer_shapes, layer_sizes, i1=0, i2=1):
         self.comm = comm
         self.rank = rank
         self.size = size
