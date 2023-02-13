@@ -12,8 +12,8 @@ module load openmpi/4.1.4
 module load cuda/11.4
 source /people/born669/middle/bin/activate
 
-mpirun -n 4 python FedAvg.py --name FedAvg-1 --randomSeed 4282 --epochs 50
-mpirun -n 4 python FedAvg.py --name FedAvg-2 --randomSeed 42 --epochs 50
-mpirun -n 4 python FedAvg.py --name FedAvg-3 --randomSeed 1132 --epochs 50
-mpirun -n 4 python FedAvg.py --name FedAvg-4 --randomSeed 2382 --epochs 50
-mpirun -n 4 python FedAvg.py --name FedAvg-5 --randomSeed 91162 --epochs 50
+mpirun -n 4 python FedAvg.py --name FedAvg-1 --randomSeed 4282 --epochs 50 --large_model 0
+mpirun -n 4 python FedAvg.py --name FedAvg-2 --randomSeed 42 --epochs 50 --large_model 0
+mpirun -n 4 python FedAvg.py --name FedAvg-3 --randomSeed 1132 --epochs 50 --large_model 0
+mpirun -n 4 python FedAvg.py --name FedAvg-4 --randomSeed 2382 --epochs 50 --large_model 0
+mpirun -n 4 python FedAvg.py --name FedAvg-5 --randomSeed 91162 --epochs 50 --large_model 0
