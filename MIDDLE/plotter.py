@@ -212,11 +212,11 @@ def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, 
 
 if __name__ == "__main__":
 
-    plot_loss = False
+    plot_loss = True
     workers = 16
-    graph_type = 'ring'
+    graph_type = 'clique-ring'
     resultFolder = 'Results/Darknet/'
-    method = 'fedavg-small'
+    method = 'fedavg-large'
 
     mean_l, min_l, max_l, mean_a, min_a, max_a,  lenL3 = process_data(workers, graph_type=graph_type, method=method)
     plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, plot_loss=plot_loss, save_fig=False)

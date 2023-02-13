@@ -97,7 +97,7 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
             t1 = time.time()
             acc_metric.update_state(target, y_p)
             loss_metric.update_state(target, y_p)
-            record_time = (time.time() - t1)
+            record_time += (time.time() - t1)
 
             # save model after batch
             local_model = copy.deepcopy(model.get_weights())

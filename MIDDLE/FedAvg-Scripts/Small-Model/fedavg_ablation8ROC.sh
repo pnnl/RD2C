@@ -5,6 +5,7 @@
 #SBATCH -N 1
 #SBATCH -n 8
 #SBATCH -J ma1
+#SBATCH --name=fed-8roc-sm
 
 module purge
 module load gcc/8.1.0
