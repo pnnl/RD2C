@@ -88,7 +88,7 @@ def fedavg_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
             average_models(model, local_model, layer_shapes, layer_sizes, L1, L2)
 
             # perform FedAvg
-            comm_time = communicator.communicate(model)
+            comm_time += communicator.communicate(model)
 
         e_time = (time.time() - e_init_time) - record_time
         comp_time = e_time - non_comp - comm_time

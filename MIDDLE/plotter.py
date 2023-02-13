@@ -55,6 +55,7 @@ def process_data(workers, epochs=50, coordination_size=128, graph_type='ring', r
                  method='middle', runs=6):
 
     if method == 'middle':
+        L3_vals = [0.0, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5]
         if graph_type == 'ring':
             resultFolder = resultFolder + str(workers) + 'WorkerRing/MIDDLE-'
         elif graph_type == 'fully-connected':
@@ -62,23 +63,24 @@ def process_data(workers, epochs=50, coordination_size=128, graph_type='ring', r
         elif graph_type == 'clique-ring':
             resultFolder = resultFolder + str(workers) + 'WorkerROC/MIDDLE-'
     elif method == 'fedavg-large':
+        L3_vals = [0.0]
         if graph_type == 'ring':
-            resultFolder = resultFolder + 'FedAvgLarge' + str(workers) + 'WorkerRing/FedAvg-'
+            resultFolder = resultFolder + 'FedAvgLarge/' + str(workers) + 'WorkerRing/FedAvg-'
         elif graph_type == 'fully-connected':
-            resultFolder = resultFolder + 'FedAvgLarge' + str(workers) + 'WorkerFC/FedAvg-'
+            resultFolder = resultFolder + 'FedAvgLarge/' + str(workers) + 'WorkerFC/FedAvg-'
         elif graph_type == 'clique-ring':
-            resultFolder = resultFolder + 'FedAvgLarge' + str(workers) + 'WorkerROC/FedAvg-'
+            resultFolder = resultFolder + 'FedAvgLarge/' + str(workers) + 'WorkerROC/FedAvg-'
     elif method == 'fedavg-small':
+        L3_vals = [0.0]
         if graph_type == 'ring':
-            resultFolder = resultFolder + 'FedAvgSmall' + str(workers) + 'WorkerRing/FedAvg-'
+            resultFolder = resultFolder + 'FedAvgSmall/' + str(workers) + 'WorkerRing/FedAvg-'
         elif graph_type == 'fully-connected':
-            resultFolder = resultFolder + 'FedAvgSmall' + str(workers) + 'WorkerFC/FedAvg-'
+            resultFolder = resultFolder + 'FedAvgSmall/' + str(workers) + 'WorkerFC/FedAvg-'
         elif graph_type == 'clique-ring':
-            resultFolder = resultFolder + 'FedAvgSmall' + str(workers) + 'WorkerROC/FedAvg-'
+            resultFolder = resultFolder + 'FedAvgSmall/' + str(workers) + 'WorkerROC/FedAvg-'
 
     # L3_vals = [0, 1. / 20, 1. / 10, 1./6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
     # L3_vals = [0.0, 1. / 20, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
-    L3_vals = [0.0, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5]
     plt.figure(1)
     mean_l = []; min_l = []; max_l = []
     mean_a = []; min_a = []; max_a = []
@@ -89,8 +91,12 @@ def process_data(workers, epochs=50, coordination_size=128, graph_type='ring', r
         L3 = L3_vals[val]
 
         for run in range(1, runs):
-            folder = resultFolder + str(run) + '-' + str(workers) + 'Worker-' + str(epochs) + 'Epochs-' + \
-                     str(L3) + 'L3Penalty-' + str(coordination_size) + 'Csize-' + str(graph_type)
+            if method == 'middle':
+                folder = resultFolder + str(run) + '-' + str(workers) + 'Worker-' + str(epochs) + 'Epochs-' + \
+                        str(L3) + 'L3Penalty-' + str(coordination_size) + 'Csize-' + str(graph_type)
+            elif method[:3] == 'fed':
+                folder = resultFolder + str(run) + '-' + str(workers) + 'Worker-' + str(epochs) + 'Epochs-' + \
+                         str(coordination_size) + 'Csize-' + str(graph_type)
 
             test_loss_data = unpack_data(folder, epochs=epochs, num_workers=workers)
             test_acc_data = unpack_data(folder, datatype='test-acc.log', epochs=epochs, num_workers=workers)
@@ -193,7 +199,7 @@ def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, 
         plt.ylabel('Average Test Accuracy', fontsize=15)
         plt.grid()
         plt.xlim([1, 50])
-        plt.ylim([0.845, 0.87])
+        # plt.ylim([0.845, 0.87])
         # plt.ylim([0.835, 0.885])
         saveFilename = "test-acc-" + str(workers) + graph_type + ".pdf"
 
@@ -206,11 +212,13 @@ def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, 
 
 if __name__ == "__main__":
 
-    plot_loss = True
-    workers = 4
+    plot_loss = False
+    workers = 16
     graph_type = 'ring'
     resultFolder = 'Results/Darknet/'
+    method = 'fedavg-small'
 
-    mean_l, min_l, max_l, mean_a, min_a, max_a,  lenL3 = process_data(workers, graph_type=graph_type)
+    mean_l, min_l, max_l, mean_a, min_a, max_a,  lenL3 = process_data(workers, graph_type=graph_type, method=method)
     plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, plot_loss=plot_loss, save_fig=False)
-    results_bar_chart(mean_a, mean_l, save_fig=False)
+    if method == 'middle':
+        results_bar_chart(mean_a, mean_l, save_fig=False)
