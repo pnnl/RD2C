@@ -5,7 +5,7 @@
 #SBATCH -N 1
 #SBATCH -n 16
 #SBATCH -J ma1
-#SBATCH --name=fed-16roc-lm
+#SBATCH --job-name=fed-16roc-lm
 
 module purge
 module load gcc/8.1.0
