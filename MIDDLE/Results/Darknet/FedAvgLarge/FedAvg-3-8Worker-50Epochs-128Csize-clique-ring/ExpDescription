@@ -1,1 +1,0 @@
-Namespace(name='FedAvg-3', experiment='Darknet', graph_type='clique-ring', lr=0.01, epochs=50, bs=64, train_split=0.8, coord_size=128, L1=0.5, L2=0.5, weight_type='uniform-neighbor-no-self-weight', large_model=1, randomSeed=1132)

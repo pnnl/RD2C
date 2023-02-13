@@ -51,115 +51,78 @@ def unpack_data(directory_path, datatype='test-loss.log', epochs=10, num_workers
     return data
 
 
-if __name__ == "__main__":
+def process_data(workers, epochs=50, coordination_size=128, graph_type='ring', resultFolder='Results/Darknet/',
+                 method='middle', runs=6):
 
-    test_loss = False
-    workers = 4
-    epochs = 50
-    coordination_size = 128
-    graph_type = 'ring'
-    resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerRing/MIDDLE-'
+    if method == 'middle':
+        if graph_type == 'ring':
+            resultFolder = resultFolder + str(workers) + 'WorkerRing/MIDDLE-'
+        elif graph_type == 'fully-connected':
+            resultFolder = resultFolder + str(workers) + 'WorkerFC/MIDDLE-'
+        elif graph_type == 'clique-ring':
+            resultFolder = resultFolder + str(workers) + 'WorkerROC/MIDDLE-'
+    elif method == 'fedavg-large':
+        if graph_type == 'ring':
+            resultFolder = resultFolder + 'FedAvgLarge' + str(workers) + 'WorkerRing/FedAvg-'
+        elif graph_type == 'fully-connected':
+            resultFolder = resultFolder + 'FedAvgLarge' + str(workers) + 'WorkerFC/FedAvg-'
+        elif graph_type == 'clique-ring':
+            resultFolder = resultFolder + 'FedAvgLarge' + str(workers) + 'WorkerROC/FedAvg-'
+    elif method == 'fedavg-small':
+        if graph_type == 'ring':
+            resultFolder = resultFolder + 'FedAvgSmall' + str(workers) + 'WorkerRing/FedAvg-'
+        elif graph_type == 'fully-connected':
+            resultFolder = resultFolder + 'FedAvgSmall' + str(workers) + 'WorkerFC/FedAvg-'
+        elif graph_type == 'clique-ring':
+            resultFolder = resultFolder + 'FedAvgSmall' + str(workers) + 'WorkerROC/FedAvg-'
 
-    #graph_type = 'fully-connected'
-    #resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerFC/MIDDLE-'
-
-    #graph_type = 'clique-ring'
-    #resultFolder = 'Results/Darknet/' + str(workers) + 'WorkerROC/MIDDLE-'
-
-    L1 = 1./3
     # L3_vals = [0, 1. / 20, 1. / 10, 1./6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
     # L3_vals = [0.0, 1. / 20, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
     L3_vals = [0.0, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5]
-    legend_vals = ['0', '1/10', '1/4', '1/3', '1/2', '3/5']
-    # L3_vals = [0.0, 1. / 20, 1. / 4, 1. / 3, 1. / 2]
-    runs = 6
     plt.figure(1)
-
-    mean_accs = np.empty(len(legend_vals))
-    mean_losses = np.empty(len(legend_vals))
+    mean_l = []; min_l = []; max_l = []
+    mean_a = []; min_a = []; max_a = []
 
     for ind, val in enumerate(range(len(L3_vals))):
         y_loss = []
         y_acc = []
         L3 = L3_vals[val]
 
-        mean_acc = np.zeros(epochs)
-        mean_loss = np.zeros(epochs)
-
         for run in range(1, runs):
             folder = resultFolder + str(run) + '-' + str(workers) + 'Worker-' + str(epochs) + 'Epochs-' + \
-                                str(L3) + 'L3Penalty-' + str(coordination_size) + 'Csize-' + str(graph_type)
+                     str(L3) + 'L3Penalty-' + str(coordination_size) + 'Csize-' + str(graph_type)
 
             test_loss_data = unpack_data(folder, epochs=epochs, num_workers=workers)
             test_acc_data = unpack_data(folder, datatype='test-acc.log', epochs=epochs, num_workers=workers)
             y_loss.append(test_loss_data.mean(axis=1))
             y_acc.append(test_acc_data.mean(axis=1))
 
-            avg_worker_test_loss = np.mean(test_loss_data, axis=1)
-            avg_worker_test_acc = np.mean(test_acc_data, axis=1)
-
-            mean_acc += avg_worker_test_acc
-            mean_loss += avg_worker_test_loss
-
-            if run == runs-1:
-                print('L3 Value: ' + str(L3))
-                print('Mean Test Loss')
-                print(mean_loss[-1]/(runs-1))
-                mean_losses[ind] = mean_loss[-1]/(runs-1)
-                print('Mean Test Accuracy')
-                print(mean_acc[-1]/(runs-1))
-                mean_accs[ind] = mean_acc[-1]/(runs-1)
-
-
-        '''
         y_loss = np.stack(y_loss, axis=0)
         y_acc = np.stack(y_acc, axis=0)
-        y_mean, y_min, y_max = generate_confidence_interval(y_loss)
+        y_mean_l, y_min_l, y_max_l = generate_confidence_interval(y_loss)
         y_mean_a, y_min_a, y_max_a = generate_confidence_interval(y_acc)
-        # mylegend = r'$\lambda_3 =$' + str(L3)
-        mylegend = r'$\lambda_3 = $' + legend_vals[ind]
-        if test_loss:
-            plt.plot(range(1, epochs+1), y_mean, label=mylegend, alpha=0.8) #, color=colors[ind])
-            plt.fill_between(range(1, epochs+1), y_min, y_max, alpha=0.2)#, color=colors[ind])
-        else:
-            plt.plot(range(1, epochs + 1), y_mean_a, label=mylegend, alpha=0.8)  # , color=colors[ind])
-            plt.fill_between(range(1, epochs + 1), y_min_a, y_max_a, alpha=0.2)  # , color=colors[ind])
+        mean_l.append(y_mean_l); min_l.append(y_min_l); max_l.append(y_max_l)
+        mean_a.append(y_mean_a); min_a.append(y_min_a); max_a.append(y_max_a)
 
-    if test_loss:
-        plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
-        plt.xlabel('Epoch', fontsize=15)
-        plt.ylabel('Average Test Loss', fontsize=15)
-        plt.grid()
-        plt.xlim([1, 50])
-        #fig = plt.gcf()
-        #fig.set_size_inches(18.5, 18.5)
-        saveFilename = "test-loss-" + str(workers) + graph_type + ".pdf"
-    else:
-        plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
-        plt.xlabel('Epoch', fontsize=15)
-        plt.ylabel('Average Test Accuracy', fontsize=15)
-        plt.grid()
-        plt.xlim([1, 50])
-        plt.ylim([0.845, 0.87])
-        # plt.ylim([0.835, 0.885])
-        #fig = plt.gcf()
-        #fig.set_size_inches(18.5, 10.5)
-        saveFilename = "test-acc-" + str(workers) + graph_type + ".pdf"
+    return mean_l, min_l, max_l, mean_a, min_a, max_a, len(L3_vals)
 
-    plt.savefig(saveFilename, format="pdf")
-    # tikzplotlib.save(saveFilename[:-4] + ".tex")
-    plt.show()
-    '''
 
-    #'''
+def results_bar_chart(mean_accs, mean_losses, save_fig=True):
+
+    m_len = len(mean_accs)
+    final_mean_accs = np.empty(m_len)
+    final_mean_losses = np.empty(m_len)
+    for i in range(m_len):
+        final_mean_accs[i] = mean_accs[i][-1]
+        final_mean_losses[i] = mean_losses[i][-1]
+
     X = [r'$\lambda_3 = 0$', r'$\lambda_3 = 1/10$', r'$\lambda_3 = 1/4$', r'$\lambda_3 = 1/3$', r'$\lambda_3 = 1/2$',
          r'$\lambda_3 = 3/5$']
 
     X_axis = np.arange(len(X))
-    print(mean_accs)
 
-    graph = plt.bar(X_axis - 0.1, mean_accs*100, 0.5, label='Average Test Accuracy', color='skyblue')
-    graph2 = plt.bar(X_axis + 0.1, mean_losses, 0.5, label='Average Test Loss', color='khaki')
+    graph = plt.bar(X_axis - 0.1, final_mean_accs * 100, 0.5, label='Average Test Accuracy', color='skyblue')
+    graph2 = plt.bar(X_axis + 0.1, final_mean_losses, 0.5, label='Average Test Loss', color='khaki')
 
     i = 0
     for p in graph2:
@@ -168,7 +131,7 @@ if __name__ == "__main__":
         x, y = p.get_xy()
         plt.text(x + width / 2,
                  y + height * 1.01,
-                 str(round(mean_losses[i], 2)),
+                 str(round(final_mean_losses[i], 2)),
                  ha='center',
                  weight='bold',
                  fontsize=10)
@@ -181,7 +144,7 @@ if __name__ == "__main__":
         x, y = p.get_xy()
         plt.text(x + width / 2,
                  y + height * 1.01,
-                 str(round(mean_accs[i]*100, 1)) + '%',
+                 str(round(final_mean_accs[i] * 100, 1)) + '%',
                  ha='center',
                  weight='bold',
                  fontsize=10)
@@ -193,7 +156,61 @@ if __name__ == "__main__":
     plt.ylabel("Final Average Test Accuracy (%) / Loss", fontsize=15)
     plt.legend(loc='best', ncol=2, fancybox=True, framealpha=0)
     saveFilename = "varyingL3Bar.pdf"
-    plt.show()
-    #plt.savefig(saveFilename, format="pdf")
-    #'''
+    if save_fig:
+        plt.savefig(saveFilename, format="pdf")
+        # tikzplotlib.save(saveFilename[:-4] + ".tex")
+    else:
+        plt.show()
 
+
+def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, plot_loss=True, save_fig=True):
+    legend_vals = ['0', '1/10', '1/4', '1/3', '1/2', '3/5']
+    for i in range(lenL3):
+        mylegend = r'$\lambda_3 = $' + legend_vals[i]
+        if plot_loss:
+            y_mean = mean_l[i]
+            y_min = min_l[i]
+            y_max = max_l[i]
+            plt.plot(range(1, epochs + 1), y_mean, label=mylegend, alpha=0.8)  # , color=colors[ind])
+            plt.fill_between(range(1, epochs + 1), y_min, y_max, alpha=0.2)  # , color=colors[ind])
+        else:
+            y_mean = mean_a[i]
+            y_min = min_a[i]
+            y_max = max_a[i]
+            plt.plot(range(1, epochs + 1), y_mean, label=mylegend, alpha=0.8)  # , color=colors[ind])
+            plt.fill_between(range(1, epochs + 1), y_min, y_max, alpha=0.2)  # , color=colors[ind])
+
+    if plot_loss:
+        plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
+        plt.xlabel('Epoch', fontsize=15)
+        plt.ylabel('Average Test Loss', fontsize=15)
+        plt.grid()
+        plt.xlim([1, 50])
+        saveFilename = "test-loss-" + str(workers) + graph_type + ".pdf"
+    else:
+        plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
+        plt.xlabel('Epoch', fontsize=15)
+        plt.ylabel('Average Test Accuracy', fontsize=15)
+        plt.grid()
+        plt.xlim([1, 50])
+        plt.ylim([0.845, 0.87])
+        # plt.ylim([0.835, 0.885])
+        saveFilename = "test-acc-" + str(workers) + graph_type + ".pdf"
+
+    if save_fig:
+        plt.savefig(saveFilename, format="pdf")
+        # tikzplotlib.save(saveFilename[:-4] + ".tex")
+    else:
+        plt.show()
+
+
+if __name__ == "__main__":
+
+    plot_loss = True
+    workers = 4
+    graph_type = 'ring'
+    resultFolder = 'Results/Darknet/'
+
+    mean_l, min_l, max_l, mean_a, min_a, max_a,  lenL3 = process_data(workers, graph_type=graph_type)
+    plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, plot_loss=plot_loss, save_fig=False)
+    results_bar_chart(mean_a, mean_l, save_fig=False)
