@@ -122,9 +122,6 @@ if __name__ == "__main__":
     # Initialize Optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
 
-    # Create MIDDLE model (same architecture and weights) for comparison
-    # middle_model_initial = tf.keras.models.clone_model(middle_model)
-
     # Output Path
     outputPath = 'Results/' + args.experiment
     saveFolder_middle = outputPath + '/' + args.name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \

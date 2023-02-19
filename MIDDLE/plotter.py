@@ -6,6 +6,32 @@ import tikzplotlib
 plt.rcParams["mathtext.fontset"]
 
 
+def multicolor_ylabel(ax,list_of_strings,list_of_colors,axis='x',anchorpad=0,**kw):
+    """this function creates axes labels with multiple colors
+    ax specifies the axes object where the labels should be drawn
+    list_of_strings is a list of all of the text items
+    list_if_colors is a corresponding list of colors for the strings
+    axis='x', 'y', or 'both' and specifies which label(s) should be drawn"""
+    from matplotlib.offsetbox import AnchoredOffsetbox, TextArea, HPacker, VPacker
+
+    # x-axis label
+    if axis=='x' or axis=='both':
+        boxes = [TextArea(text, textprops=dict(color=color, ha='left',va='bottom',**kw))
+                    for text,color in zip(list_of_strings,list_of_colors) ]
+        xbox = HPacker(children=boxes,align="center",pad=0, sep=5)
+        anchored_xbox = AnchoredOffsetbox(loc=3, child=xbox, pad=anchorpad,frameon=False,bbox_to_anchor=(0.2, -0.09),
+                                          bbox_transform=ax.transAxes, borderpad=0.)
+        ax.add_artist(anchored_xbox)
+
+    # y-axis label
+    if axis=='y' or axis=='both':
+        boxes = [TextArea(text, textprops=dict(color=color, ha='left',va='bottom',rotation=90,**kw))
+                     for text,color in zip(list_of_strings[::-1],list_of_colors) ]
+        ybox = VPacker(children=boxes,align="center", pad=0, sep=5)
+        anchored_ybox = AnchoredOffsetbox(loc=3, child=ybox, pad=anchorpad, frameon=False, bbox_to_anchor=(-0.10, 0.2),
+                                          bbox_transform=ax.transAxes, borderpad=0.)
+        ax.add_artist(anchored_ybox)
+
 def bootstrapping(data, num_per_group, num_of_group):
     new_data = np.array([np.mean(np.random.choice(data, num_per_group, replace=True)) for _ in range(num_of_group)])
     return new_data
@@ -112,7 +138,6 @@ def process_data(workers, epochs=50, coordination_size=128, graph_type='ring', r
 
     return mean_l, min_l, max_l, mean_a, min_a, max_a, len(L3_vals)
 
-
 def results_bar_chart(mean_accs, mean_losses, save_fig=True):
 
     m_len = len(mean_accs)
@@ -212,13 +237,104 @@ def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, 
 
 if __name__ == "__main__":
 
-    plot_loss = True
+    plot_loss = False
     workers = 16
-    graph_type = 'clique-ring'
+    graph_type = 'ring'
     resultFolder = 'Results/Darknet/'
-    method = 'fedavg-large'
+    method = 'middle'
 
     mean_l, min_l, max_l, mean_a, min_a, max_a,  lenL3 = process_data(workers, graph_type=graph_type, method=method)
     plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, plot_loss=plot_loss, save_fig=False)
     if method == 'middle':
         results_bar_chart(mean_a, mean_l, save_fig=False)
+
+    '''
+    # FedAvg Bar Chart
+    mean_l, _, _, mean_a, _, _, _ = process_data(16, graph_type='fully-connected', method='fedavg-large')
+    middle_mean_l, _, _, middle_mean_a, _, _, _ = process_data(16, graph_type='fully-connected', method='middle')
+    mean_l = mean_l[-1][-1]
+    mean_a = mean_a[-1][-1]
+    middle_nol3_l = middle_mean_l[0][-1]
+    middle_nol3_a = middle_mean_a[0][-1]
+    middle_l3_1L = middle_mean_l[1][-1]
+    middle_l3_1A = middle_mean_a[1][-1]
+    middle_l3_2L = middle_mean_l[2][-1]
+    middle_l3_2A = middle_mean_a[2][-1]
+    middle_l3_3L = middle_mean_l[3][-1]
+    middle_l3_3A = middle_mean_a[3][-1]
+    save_fig = False
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax2 = ax.twinx()
+
+    accs = np.array([mean_a, middle_nol3_a, middle_l3_1A, middle_l3_2A, middle_l3_3A])
+    losses = np.array([mean_l, middle_nol3_l, middle_l3_1L, middle_l3_2L, middle_l3_3L])
+    params = np.array([347382, 0, 512, 512, 512])
+    # log_params = np.where(params > 0, np.log(params), 0)
+
+    X = ['FedAvg', 'No Collaboration', r'MIDDLE $\lambda_3 = 1/10$', r'MIDDLE $\lambda_3 = 1/4$', r'MIDDLE $\lambda_3 = 1/3$']
+    X_axis = np.arange(len(X))
+
+    ax.bar(np.nan, np.nan, 0.5, label='Total Communicated \n Parameters', color='lightgreen')
+    graph = ax.bar(X_axis, accs * 100, 0.5, label='Average \n Test Accuracy', color='skyblue')
+    graph2 = ax.bar(X_axis + 0.2, losses, 0.4, label='Average \n Test Loss', color='khaki')
+    graph3 = ax2.bar(X_axis - 0.2, params, 0.4, label='Total Communicated \n Parameters', color='lightgreen')
+
+    i = 0
+    for p in graph3:
+        width = p.get_width()
+        height = p.get_height()
+        x, y = p.get_xy()
+        ax2.text(x + width / 2,
+                 y + height * 1.01,
+                 str(params[i]),
+                 ha='center',
+                 weight='bold',
+                 fontsize=10)
+        i += 1
+
+    i = 0
+    for p in graph:
+        width = p.get_width()
+        height = p.get_height()
+        x, y = p.get_xy()
+        ax.text(x + width / 2,
+                 y + height * 1.01,
+                 str(round(accs[i] * 100, 2)) + '%',
+                 ha='center',
+                 weight='bold',
+                 fontsize=10)
+        i += 1
+
+    i = 0
+    for p in graph2:
+        width = p.get_width()
+        height = p.get_height()
+        x, y = p.get_xy()
+        ax.text(x + width / 2,
+                 y + height * 1.01,
+                 str(round(losses[i], 2)),
+                 ha='center',
+                 weight='bold',
+                 fontsize=10)
+        i += 1
+
+    multicolor_ylabel(ax, ('Test Accuracy (%)', 'and', 'Test Loss'), ('y', 'k', 'b'), axis='y', fontsize=15)
+    ax2.set_ylabel('Communicated Parameters', fontsize=15, color='g')
+    ax2.set_yscale('symlog')
+
+    legend = ax.legend(loc='best', ncol=3, fancybox=True, framealpha=0)
+
+    ax.set_xticks(X_axis, X, rotation=20, ha='right')
+    ax.set_ylim(0, 110)
+    ax2.set_ylim(1, 1e8)
+    ax2.set_yticks([0, 100, 10000, 1000000])
+    # ax.tight_layout()
+    # for t in legend.get_texts():
+    #     t.set_ha('center')
+    saveFilename = "fedavg-comparison.pdf"
+    if save_fig:
+        plt.savefig(saveFilename, format="pdf")
+    else:
+        plt.show()
+    '''

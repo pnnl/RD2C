@@ -102,6 +102,8 @@ if __name__ == "__main__":
     # model architecture
     layer_shapes, layer_sizes = get_model_architecture(fedavg_model)
 
+    print(fedavg_model.summary())
+
     # initialize graph
     G = Graph(rank, size, mpi, args.graph_type, weight_type=args.weight_type)
 
