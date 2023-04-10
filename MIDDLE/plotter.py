@@ -241,14 +241,14 @@ if __name__ == "__main__":
     workers = 16
     graph_type = 'ring'
     resultFolder = 'Results/Darknet/'
-    method = 'middle'
+    method = 'fedavg-large'
 
     mean_l, min_l, max_l, mean_a, min_a, max_a,  lenL3 = process_data(workers, graph_type=graph_type, method=method)
     plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, plot_loss=plot_loss, save_fig=False)
     if method == 'middle':
         results_bar_chart(mean_a, mean_l, save_fig=False)
 
-    '''
+    #'''
     # FedAvg Bar Chart
     mean_l, _, _, mean_a, _, _, _ = process_data(16, graph_type='fully-connected', method='fedavg-large')
     middle_mean_l, _, _, middle_mean_a, _, _, _ = process_data(16, graph_type='fully-connected', method='middle')
@@ -262,7 +262,7 @@ if __name__ == "__main__":
     middle_l3_2A = middle_mean_a[2][-1]
     middle_l3_3L = middle_mean_l[3][-1]
     middle_l3_3A = middle_mean_a[3][-1]
-    save_fig = False
+    save_fig = True
 
     fig, ax = plt.subplots(figsize=(8, 6))
     ax2 = ax.twinx()
@@ -275,17 +275,17 @@ if __name__ == "__main__":
     X = ['FedAvg', 'No Collaboration', r'MIDDLE $\lambda_3 = 1/10$', r'MIDDLE $\lambda_3 = 1/4$', r'MIDDLE $\lambda_3 = 1/3$']
     X_axis = np.arange(len(X))
 
-    ax.bar(np.nan, np.nan, 0.5, label='Total Communicated \n Parameters', color='lightgreen')
-    graph = ax.bar(X_axis, accs * 100, 0.5, label='Average \n Test Accuracy', color='skyblue')
-    graph2 = ax.bar(X_axis + 0.2, losses, 0.4, label='Average \n Test Loss', color='khaki')
-    graph3 = ax2.bar(X_axis - 0.2, params, 0.4, label='Total Communicated \n Parameters', color='lightgreen')
+    na = ax2.bar(np.nan, np.nan, 0.5, label='Total Communicated \n Parameters', color='lightgreen')
+    # graph = ax.bar(X_axis, accs * 100, 0.5, label='Average \n Test Accuracy', color='skyblue')
+    graph2 = ax2.bar(X_axis + 0.2, losses, 0.4, label='Average \n Test Loss', color='khaki')
+    graph3 = ax.bar(X_axis - 0.2, params, 0.4, label='Total Communicated \n Parameters', color='lightgreen')
 
     i = 0
     for p in graph3:
         width = p.get_width()
         height = p.get_height()
         x, y = p.get_xy()
-        ax2.text(x + width / 2,
+        ax.text(x + width / 2,
                  y + height * 1.01,
                  str(params[i]),
                  ha='center',
@@ -293,42 +293,43 @@ if __name__ == "__main__":
                  fontsize=10)
         i += 1
 
-    i = 0
-    for p in graph:
-        width = p.get_width()
-        height = p.get_height()
-        x, y = p.get_xy()
-        ax.text(x + width / 2,
-                 y + height * 1.01,
-                 str(round(accs[i] * 100, 2)) + '%',
-                 ha='center',
-                 weight='bold',
-                 fontsize=10)
-        i += 1
+    #i = 0
+    #for p in graph:
+    #    width = p.get_width()
+    #    height = p.get_height()
+    #    x, y = p.get_xy()
+    #    ax.text(x + width / 2,
+    #             y + height * 1.01,
+    #             str(round(accs[i] * 100, 2)) + '%',
+    #             ha='center',
+    #             weight='bold',
+    #             fontsize=10)
+    #    i += 1
 
     i = 0
     for p in graph2:
         width = p.get_width()
         height = p.get_height()
         x, y = p.get_xy()
-        ax.text(x + width / 2,
-                 y + height * 1.01,
+        ax2.text(x + width / 2,
+                 y + height + 0.01,
                  str(round(losses[i], 2)),
                  ha='center',
                  weight='bold',
                  fontsize=10)
         i += 1
 
-    multicolor_ylabel(ax, ('Test Accuracy (%)', 'and', 'Test Loss'), ('y', 'k', 'b'), axis='y', fontsize=15)
-    ax2.set_ylabel('Communicated Parameters', fontsize=15, color='g')
-    ax2.set_yscale('symlog')
+    #multicolor_ylabel(ax, ('Test Accuracy (%)', 'and', 'Test Loss'), ('y', 'k', 'b'), axis='y', fontsize=15)
+    ax2.set_ylabel('Average Test Loss', fontsize=15, color='y')
+    ax.set_ylabel('Communicated Parameters', fontsize=15, color='g')
+    ax.set_yscale('symlog')
 
-    legend = ax.legend(loc='best', ncol=3, fancybox=True, framealpha=0)
+    legend = ax2.legend(loc='best', ncol=3, fancybox=True, framealpha=0)
 
     ax.set_xticks(X_axis, X, rotation=20, ha='right')
-    ax.set_ylim(0, 110)
-    ax2.set_ylim(1, 1e8)
-    ax2.set_yticks([0, 100, 10000, 1000000])
+    ax2.set_ylim(0, 15)
+    ax.set_ylim(1, 1e6)
+    ax.set_yticks([0, 100, 10000, 1000000])
     # ax.tight_layout()
     # for t in legend.get_texts():
     #     t.set_ha('center')
@@ -337,4 +338,4 @@ if __name__ == "__main__":
         plt.savefig(saveFilename, format="pdf")
     else:
         plt.show()
-    '''
+    #'''
