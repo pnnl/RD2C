@@ -4,6 +4,12 @@ import numpy as np
 from six.moves import cPickle as pickle
 import os
 import platform
+from mpi4py import MPI
+from MIDDLE_Train import middle_train
+from communication import DecentralizedNoModelSGD
+from misc import Recorder
+from network import Graph
+import argparse
 
 def unpickle(file):
     import pickle
@@ -43,7 +49,10 @@ def load_CIFAR10(ROOT):
     del X, Y
     Xte, Yte = load_CIFAR_batch(os.path.join(ROOT, 'test_batch'))
     return Xtr, Ytr, Xte, Yte
-def get_CIFAR10_data(num_training=50000, num_validation=0, num_test=10000):
+def get_CIFAR10_data(num_validation, train_bs, num_test=10000):
+
+    num_training = 50000 - num_validation
+
     # Load the raw CIFAR-10 data
     cifar10_dir = 'Data/cifar10/'
     X_train, y_train, X_test, y_test = load_CIFAR10(cifar10_dir)
@@ -65,26 +74,62 @@ def get_CIFAR10_data(num_training=50000, num_validation=0, num_test=10000):
     x_train /= 255
     x_test /= 255
 
-    return x_train, y_train, X_val, y_val, x_test, y_test
+    x_train = tf.convert_to_tensor(x_train)
+    y_train = tf.convert_to_tensor(y_train)
+    train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(train_bs)
+    x_test = tf.convert_to_tensor(x_test)
+    y_test = tf.convert_to_tensor(y_test)
+
+    return train_data, x_test, y_test, tf.convert_to_tensor(X_val), tf.convert_to_tensor(y_val)
+
+
+def get_model_architecture(model):
+    # find shape and total elements for each layer of the resnet model
+    model_weights = model.get_weights()
+    layer_shapes = []
+    layer_sizes = []
+    for i in range(len(model_weights)):
+        layer_shapes.append(model_weights[i].shape)
+        layer_sizes.append(model_weights[i].size)
+    return layer_shapes, layer_sizes
 
 
 if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser(description='MIDDLE CIFAR10 Training')
+    parser.add_argument('--name', '-n', default='MIDDLE-CIFAR10', type=str, help='experiment name')
+    parser.add_argument('--experiment', '-exp', default='Darknet', type=str, help='experiment name')
+    parser.add_argument('--graph_type', default='ring', type=str, help='baseline topology')
+    parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
+    parser.add_argument('--epochs', '-e', default=10, type=int, help='total epochs')
+    parser.add_argument('--bs', default=256, type=int, help='train batch size for each worker')
+    parser.add_argument('--train_split', default=0.8, type=float, help='train data percent')
+    parser.add_argument('--coord_size', default=128, type=int, help='coordination dataset size')
+    parser.add_argument('--L1', default=1 / 3, type=float, help='train set loss weighting')
+    parser.add_argument('--L2', default=1 / 3, type=float, help='coordination set loss weighting')
+    parser.add_argument('--L3', default=1 / 3, type=float, help='coordination set alignment loss weighting')
+    parser.add_argument('--weight_type', default='uniform-neighbor-no-self-weight', type=str, help='worker weightings')
+    parser.add_argument('--randomSeed', default=482, type=int, help='random seed')
+    args = parser.parse_args()
+
+    # initialize random seed
+    tf.keras.utils.set_random_seed(args.randomSeed)
+
+    mpi = MPI.COMM_WORLD
+    bcast = mpi.bcast
+    barrier = mpi.barrier
+    rank = mpi.rank
+    size = mpi.size
+
     classes = ('plane', 'car', 'bird', 'cat',
                'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+    num_outputs = len(classes)
 
     img_rows, img_cols = 32, 32
     input_shape = (img_rows, img_cols, 3)
 
     # Invoke the above function to get our data.
-    x_train, y_train, x_val, y_val, x_test, y_test = get_CIFAR10_data()
-
-    print('Train data shape: ', x_train.shape)
-    print('Train labels shape: ', y_train.shape)
-    print('Validation data shape: ', x_val.shape)
-    print('Validation labels shape: ', y_val.shape)
-    print('Test data shape: ', x_test.shape)
-    print('Test labels shape: ', y_test.shape)
+    train_data, x_test, y_test, x_val, y_val = get_CIFAR10_data(args.coord_size, args.bs)
 
     # create model
     model = tf.keras.models.Sequential()
@@ -97,8 +142,61 @@ if __name__ == "__main__":
     model.add(tf.keras.layers.Dense(64, activation='relu'))
     model.add(tf.keras.layers.Dense(10, activation='softmax'))
 
+    # initialize graph
+    G = Graph(rank, size, mpi, args.graph_type, weight_type=args.weight_type)
+
+    # initialize communicator
+    communicator = DecentralizedNoModelSGD(rank, size, mpi, G)
+
+    # Initialize Local Loss Function
+    lossF = tf.keras.losses.SparseCategoricalCrossentropy()
+
+    # model architecture
+    layer_shapes, layer_sizes = get_model_architecture(model)
+
+    # L1, L2, L3 penalties
+    L1 = args.L1
+    L3 = args.L3
+    L2 = 1 - (L1 + L3)
+
+    L1 = 1
+    L2 = 0
+    L3 = 0
+
+    if rank == 0:
+        print('L3 Value = %f' % L3)
+
+    # epochs
+    epochs = args.epochs
+
+    # Initialize Optimizer
+    optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
+
+    # Output Path
+    outputPath = 'Results/' + args.experiment
+    saveFolder_middle = outputPath + '/' + args.name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
+                        str(L3) + 'L3Penalty-' + str(args.coord_size) + 'Csize-' + str(args.graph_type)
+
+    recorder_middle = Recorder(args.name, size, rank, args.graph_type, epochs, L3, args.coord_size, outputPath)
+
+    mpi.Barrier()
+
+    if rank == 0:
+        with open(saveFolder_middle + '/ExpDescription', 'w') as f:
+            f.write(str(args) + '\n')
+        print('Beginning Training...')
+
+    mpi.Barrier()
+
+    middle_train(model, communicator, rank, lossF, optimizer, train_data, x_val, y_val, x_test,
+                 y_test, epochs, args.coord_size, num_outputs, layer_shapes, layer_sizes, recorder_middle,
+                 L1, L2, L3)
+
+
+    '''
     model.compile(optimizer='adam',
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
                   metrics=['accuracy'])
 
     history = model.fit(x_train, y_train, epochs=10, validation_data=(x_test, y_test))
+    '''

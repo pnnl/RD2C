@@ -61,8 +61,12 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
     acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
     loss_metric = tf.keras.metrics.SparseCategoricalCrossentropy()
 
-    loss_L2 = L2 / (L2 + L3)
-    loss_L3 = L3 / (L2 + L3)
+    if (L2 + L3) > 0:
+        loss_L2 = L2 / (L2 + L3)
+        loss_L3 = L3 / (L2 + L3)
+    else:
+        loss_L2 = 0
+        loss_L3 = 0
 
     for epoch in range(epochs):
 

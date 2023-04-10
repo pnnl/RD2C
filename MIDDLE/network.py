@@ -14,9 +14,14 @@ class Graph:
         # Create graph from string input or return custom inputted graph
         self.graph = self.selectGraph(graph, p, num_c)
 
-        # Determine each node's neighbors and the weights for each node in the Graph
-        self.neighbor_list = self.getNeighbors(rank)
-        self.neighbor_weights = self.getWeights(weight_type)
+        if size > 1:
+            # Determine each node's neighbors and the weights for each node in the Graph
+            self.neighbor_list = self.getNeighbors(rank)
+            self.neighbor_weights = self.getWeights(weight_type)
+
+        else:
+            self.neighbor_list = [0]
+            self.neighbor_weights = [1]
 
     def selectGraph(self, graph, p, num_c):
 
