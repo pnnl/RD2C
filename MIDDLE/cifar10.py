@@ -49,7 +49,7 @@ def load_CIFAR10(ROOT):
     del X, Y
     Xte, Yte = load_CIFAR_batch(os.path.join(ROOT, 'test_batch'))
     return Xtr, Ytr, Xte, Yte
-def get_CIFAR10_data(num_validation, train_bs, num_test=10000):
+def get_CIFAR10_data(rank, size, num_validation, train_bs, num_test=10000):
 
     num_training = 50000 - num_validation
 
@@ -74,9 +74,18 @@ def get_CIFAR10_data(num_validation, train_bs, num_test=10000):
     x_train /= 255
     x_test /= 255
 
+    # skew data here...
+    skew_sort_idx = np.argsort(y_train)
+    x_train = x_train[skew_sort_idx]
+    y_train = y_train[skew_sort_idx]
+
+    # split data amongst devices
+    x_train = np.array_split(x_train, size)[rank]
+    y_train = np.array_split(y_train, size)[rank]
+
     x_train = tf.convert_to_tensor(x_train)
     y_train = tf.convert_to_tensor(y_train)
-    train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(train_bs)
+    train_data = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(int(num_training/size)).batch(train_bs)
     x_test = tf.convert_to_tensor(x_test)
     y_test = tf.convert_to_tensor(y_test)
 
@@ -99,7 +108,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='MIDDLE CIFAR10 Training')
     parser.add_argument('--name', '-n', default='MIDDLE-CIFAR10', type=str, help='experiment name')
     parser.add_argument('--experiment', '-exp', default='Darknet', type=str, help='experiment name')
-    parser.add_argument('--graph_type', default='ring', type=str, help='baseline topology')
+    parser.add_argument('--graph_type', default='fully-connected', type=str, help='baseline topology')
     parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
     parser.add_argument('--epochs', '-e', default=10, type=int, help='total epochs')
     parser.add_argument('--bs', default=256, type=int, help='train batch size for each worker')
@@ -129,7 +138,7 @@ if __name__ == "__main__":
     input_shape = (img_rows, img_cols, 3)
 
     # Invoke the above function to get our data.
-    train_data, x_test, y_test, x_val, y_val = get_CIFAR10_data(args.coord_size, args.bs)
+    train_data, x_test, y_test, x_val, y_val = get_CIFAR10_data(rank, size, args.coord_size, args.bs)
 
     # create model
     model = tf.keras.models.Sequential()
@@ -159,9 +168,19 @@ if __name__ == "__main__":
     L3 = args.L3
     L2 = 1 - (L1 + L3)
 
+    L1 = 1/3
+    L2 = 1/3
+    L3 = 1/3
+
+    #'''
     L1 = 1
-    L2 = 0
-    L3 = 0
+    L2 = 1
+    L3 = 4
+    #'''
+    sum = L1+L2+L3
+    L1 = L1 / sum
+    L2 = L2 / sum
+    L3 = L3 / sum
 
     if rank == 0:
         print('L3 Value = %f' % L3)
@@ -191,7 +210,6 @@ if __name__ == "__main__":
     middle_train(model, communicator, rank, lossF, optimizer, train_data, x_val, y_val, x_test,
                  y_test, epochs, args.coord_size, num_outputs, layer_shapes, layer_sizes, recorder_middle,
                  L1, L2, L3)
-
 
     '''
     model.compile(optimizer='adam',
