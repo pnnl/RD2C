@@ -5,6 +5,7 @@ import time
 import copy
 sys.path.append('../Decentralized-FL-Framework')
 from comm_weights import flatten_weights, unflatten_weights
+from tqdm import tqdm
 
 
 def set_learning_rate(optimizer, epoch):
@@ -68,7 +69,8 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
         e_init_time = time.time()
 
         # Local Training
-        for batch_idx, (data, target) in enumerate(train_dataset):
+        # for (data, target) in tqdm(train_dataset):
+        for (data, target) in train_dataset:
 
             # Forward Pass of Coordination Set (get z)
             send_predicted = np.zeros((num_outputs * coord_batch_size, 1), dtype=np.float32)

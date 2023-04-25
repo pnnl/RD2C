@@ -124,9 +124,13 @@ class DecentralizedNoModelSGD:
         avg_predictions = np.zeros_like(predictions)
 
         recv_tmp = np.empty_like(predictions)
+
         # decentralized averaging
+        for node in self.neighbor_list:
+            self.comm.Isend(buf=predictions, dest=node, tag=self.rank)
+
         for idx, node in enumerate(self.neighbor_list):
-            self.comm.Sendrecv(sendbuf=predictions, source=node, recvbuf=recv_tmp, dest=node)
+            self.comm.Recv(buf=recv_tmp, source=node, tag=node)
             # Aggregate neighbors' models: alpha * sum_j x_j
             avg_predictions = np.add(avg_predictions, self.neighbor_weights[idx] * recv_tmp)
 
