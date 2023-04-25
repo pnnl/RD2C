@@ -7,17 +7,6 @@ sys.path.append('../Decentralized-FL-Framework')
 from comm_weights import flatten_weights, unflatten_weights
 
 
-# Implement Custom Loss Function
-# @tf.function
-def consensus_loss(y_true, y_pred, z, lam2, lam3):
-    # local error
-    local_loss = lam2 * tf.keras.losses.SparseCategoricalCrossentropy()(y_true, y_pred)
-    # consensus error
-    consensus_loss = lam3 * tf.keras.losses.CategoricalCrossentropy()(z, y_pred)
-    return local_loss + consensus_loss
-
-
-
 def set_learning_rate(optimizer, epoch):
     if epoch >= 1:
         optimizer.lr = optimizer.lr * tf.math.exp(-0.1)
@@ -48,9 +37,13 @@ def train_step(model, optimizer, lossF, data, target):
 # @tf.function
 def consensus_step(model, optimizer, c_data, c_target, z, lam2, lam3):
     with tf.GradientTape() as tape:
-        c_yp = model(c_data, training=True)
-        loss_val = consensus_loss(y_true=c_target, y_pred=c_yp,
-                                  z=z, lam2=lam2, lam3=lam3)
+        c_yp = model(c_data, training=False)
+        # local error
+        local_loss = lam2 * tf.keras.losses.SparseCategoricalCrossentropy()(c_target, c_yp)
+        # consensus error
+        consensus_loss = lam3 * tf.keras.losses.CategoricalCrossentropy()(z, c_yp)
+        # combined error
+        loss_val = local_loss + consensus_loss
     grads = tape.gradient(loss_val, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
 
@@ -58,19 +51,10 @@ def consensus_step(model, optimizer, c_data, c_target, z, lam2, lam3):
 def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coordination_x, coordination_y, test_x,
                  test_y, epochs, coord_batch_size, num_outputs, layer_shapes, layer_sizes, recorder,
                  L1=0.5, L2=0.25, L3=0.25):
+    
     acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
     loss_metric = tf.keras.metrics.SparseCategoricalCrossentropy()
-
-    '''
-    if (L2 + L3) > 0:
-        loss_L2 = L2 / (L2 + L3)
-        loss_L3 = L3 / (L2 + L3)
-    else:
-        loss_L2 = 0
-        loss_L3 = 0
-    '''
-    loss_L2 = L2
-    loss_L3 = L3
+    test_dataset = tf.data.Dataset.from_tensor_slices((test_x, test_y)).shuffle(int(len(test_y))).batch(1024)
 
     for epoch in range(epochs):
 
@@ -80,6 +64,7 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
         record_time = 0
         comm_time = 0
         non_comp = 0
+        coordination_x = tf.cast(coordination_x, dtype=tf.float32)
         e_init_time = time.time()
 
         # Local Training
@@ -87,7 +72,7 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
 
             # Forward Pass of Coordination Set (get z)
             send_predicted = np.zeros((num_outputs * coord_batch_size, 1), dtype=np.float32)
-            pred = model(coordination_x, training=True)
+            pred = model(coordination_x, training=False)
             send_predicted[:, 0] = pred.numpy().flatten()
 
             t1 = time.time()
@@ -116,20 +101,34 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
 
             # Consensus Training
             z = recv_avg_pred[:, 0].reshape(coord_batch_size, num_outputs)
-            consensus_step(model, optimizer, coordination_x, coordination_y, z, loss_L2, loss_L3)
+            #'''
+            consensus_step(model, optimizer, coordination_x, coordination_y, z, L2, L3)
+            #'''
 
             # update model weights
             average_models(model, local_model, layer_shapes, layer_sizes, L1, L2, L3)
 
+
         e_time = (time.time() - e_init_time) - record_time
         comp_time = e_time - non_comp - comm_time
 
-        # Test Accuracy
-        model.compile(optimizer, lossF, metrics=tf.keras.metrics.SparseCategoricalAccuracy())
-        e_test_loss, e_test_acc = model.evaluate(test_x, test_y, verbose=0)
-
         e_loss = loss_metric.result()
         e_acc = acc_metric.result()
+
+        # Test Accuracy
+        loss_metric.reset_states()
+        acc_metric.reset_states()
+        for (data, target) in test_dataset:
+            y_p = model(data, training=False)
+            acc_metric.update_state(target, y_p)
+            loss_metric.update_state(target, y_p)
+
+        e_test_loss = loss_metric.result()
+        e_test_acc = acc_metric.result()
+
+        # model.compile(optimizer, lossF, metrics=tf.keras.metrics.SparseCategoricalAccuracy())
+        # e_test_loss, e_test_acc = model.evaluate(test_x, test_y, verbose=0)
+
         print(
             '(Rank %d) Epoch %d: Time is %0.4f, Test Acc: %0.4f, Test Loss: %0.4f, Train Acc: %0.4f, Train Loss: %0.4f'
             % (rank, epoch + 1, e_time, e_test_acc, e_test_loss, e_acc, e_loss))
