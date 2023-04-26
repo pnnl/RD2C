@@ -10,6 +10,7 @@ from misc import Recorder
 from network import Graph
 import argparse
 from models.resnet import ResNet18
+# tf.config.set_visible_devices([], 'GPU')
 
 def unpickle(file):
     import pickle
