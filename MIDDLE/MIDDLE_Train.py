@@ -56,6 +56,7 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
     acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
     loss_metric = tf.keras.metrics.SparseCategoricalCrossentropy()
     test_dataset = tf.data.Dataset.from_tensor_slices((test_x, test_y)).shuffle(int(len(test_y))).batch(1024)
+    coordination_x = tf.cast(coordination_x, dtype=tf.float32)
 
     for epoch in range(epochs):
 
@@ -65,7 +66,6 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
         record_time = 0
         comm_time = 0
         non_comp = 0
-        coordination_x = tf.cast(coordination_x, dtype=tf.float32)
         e_init_time = time.time()
 
         # Local Training

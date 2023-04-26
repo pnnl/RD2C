@@ -1,5 +1,4 @@
 import tensorflow as tf
-import numpy as np
 import sys
 import time
 import copy
@@ -36,7 +35,7 @@ def train_step(model, optimizer, lossF, data, target):
 # @tf.function
 def consensus_step(model, optimizer, lossF, c_data, c_target):
     with tf.GradientTape() as tape:
-        c_yp = model(c_data, training=True)
+        c_yp = model(c_data, training=False)
         loss_val = lossF(y_true=c_target, y_pred=c_yp)
     grads = tape.gradient(loss_val, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_variables))
@@ -47,6 +46,8 @@ def fedavg_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
 
     acc_metric = tf.keras.metrics.SparseCategoricalAccuracy()
     loss_metric = tf.keras.metrics.SparseCategoricalCrossentropy()
+    test_dataset = tf.data.Dataset.from_tensor_slices((test_x, test_y)).shuffle(int(len(test_y))).batch(1024)
+    coordination_x = tf.cast(coordination_x, dtype=tf.float32)
 
     for epoch in range(epochs):
 
@@ -93,12 +94,20 @@ def fedavg_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
         e_time = (time.time() - e_init_time) - record_time
         comp_time = e_time - non_comp - comm_time
 
-        # Test Accuracy
-        model.compile(optimizer, lossF, metrics=tf.keras.metrics.SparseCategoricalAccuracy())
-        e_test_loss, e_test_acc = model.evaluate(test_x, test_y, verbose=0)
-
         e_loss = loss_metric.result()
         e_acc = acc_metric.result()
+
+        # Test Accuracy
+        loss_metric.reset_states()
+        acc_metric.reset_states()
+        for (data, target) in test_dataset:
+            y_p = model(data, training=False)
+            acc_metric.update_state(target, y_p)
+            loss_metric.update_state(target, y_p)
+
+        e_test_loss = loss_metric.result()
+        e_test_acc = acc_metric.result()
+
         print(
             '(Rank %d) Epoch %d: Time is %0.4f, Test Acc: %0.4f, Test Loss: %0.4f, Train Acc: %0.4f, Train Loss: %0.4f'
             % (rank, epoch + 1, e_time, e_test_acc, e_test_loss, e_acc, e_loss))
