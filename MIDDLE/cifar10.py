@@ -1,5 +1,4 @@
 import tensorflow as tf
-import matplotlib.pyplot as plt
 import numpy as np
 from six.moves import cPickle as pickle
 import os
@@ -170,24 +169,32 @@ if __name__ == "__main__":
             model.add(tf.keras.layers.Flatten())
             model.add(tf.keras.layers.Dense(64, activation='relu'))
             model.add(tf.keras.layers.Dense(10, activation='softmax'))
+
+            lr = 0.01
+
         else:
 
             model = ResNet18(10)
             model.build(input_shape=(None, 32, 32, 3))
-
-            '''
-            model = tf.keras.models.Sequential()
-            model.add(tf.keras.layers.Flatten(input_shape=input_shape))
-            model.add(tf.keras.layers.Dense(1536, activation='relu'))
-            model.add(tf.keras.layers.Dense(768, activation='relu'))
-            model.add(tf.keras.layers.Dense(384, activation='relu'))
-            model.add(tf.keras.layers.Dense(128, activation='relu'))
-            model.add(tf.keras.layers.Dense(10, activation='softmax'))
-            '''
+            lr = args.lr
     else:
 
-        model = ResNet18(10)
-        model.build(input_shape=(None, 32, 32, 3))
+        model = tf.keras.models.Sequential()
+        model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape))
+        model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+        model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
+        model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+        model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
+        model.add(tf.keras.layers.Flatten())
+        model.add(tf.keras.layers.Dense(64, activation='relu'))
+        model.add(tf.keras.layers.Dense(10, activation='softmax'))
+
+        lr = 0.01
+
+        # Resnet 18
+        # model = ResNet18(10)
+        # model.build(input_shape=(None, 32, 32, 3))
+        # lr = args.lr
 
         # ResNet50
         '''
@@ -234,7 +241,6 @@ if __name__ == "__main__":
               shuffle=True)
     '''
 
-
     if rank == 0:
         print('L3 Value = %f' % L3)
 
@@ -242,7 +248,7 @@ if __name__ == "__main__":
     epochs = args.epochs
 
     # Initialize Optimizer
-    optimizer = tf.keras.optimizers.Adam(learning_rate=args.lr)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
 
     # Output Path
     outputPath = 'Results/' + args.experiment
