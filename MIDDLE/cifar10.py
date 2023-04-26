@@ -134,6 +134,7 @@ if __name__ == "__main__":
     parser.add_argument('--L3', default=1., type=float, help='coordination set alignment loss weighting')
     parser.add_argument('--weight_type', default='uniform-neighbor-no-self-weight', type=str, help='worker weightings')
     parser.add_argument('--randomSeed', default=482, type=int, help='random seed')
+    parser.add_argument('--large_model', default=1, type=int, help='use larger model')
     args = parser.parse_args()
 
     # initialize random seed
@@ -178,34 +179,34 @@ if __name__ == "__main__":
             model.build(input_shape=(None, 32, 32, 3))
             lr = args.lr
     else:
+        if args.large_model:
+            # Resnet 18
+            model = ResNet18(10)
+            model.build(input_shape=(None, 32, 32, 3))
+            lr = args.lr
 
-        model = tf.keras.models.Sequential()
-        model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape))
-        model.add(tf.keras.layers.MaxPooling2D((2, 2)))
-        model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
-        model.add(tf.keras.layers.MaxPooling2D((2, 2)))
-        model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
-        model.add(tf.keras.layers.Flatten())
-        model.add(tf.keras.layers.Dense(64, activation='relu'))
-        model.add(tf.keras.layers.Dense(10, activation='softmax'))
-
-        lr = 0.01
-
-        # Resnet 18
-        # model = ResNet18(10)
-        # model.build(input_shape=(None, 32, 32, 3))
-        # lr = args.lr
-
-        # ResNet50
-        '''
-        model = tf.keras.applications.resnet50.ResNet50(include_top=True,
-                                                        weights=None,
-                                                        input_tensor=None,
-                                                        input_shape=(32, 32, 3),
-                                                        pooling=None,
-                                                        classes=10,
-                                                        )
-        '''
+            '''
+            # ResNet50
+            model = tf.keras.applications.resnet50.ResNet50(include_top=True,
+                                                            weights=None,
+                                                            input_tensor=None,
+                                                            input_shape=(32, 32, 3),
+                                                            pooling=None,
+                                                            classes=10,
+                                                            )
+            '''
+        else:
+            # small model
+            model = tf.keras.models.Sequential()
+            model.add(tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape))
+            model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+            model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
+            model.add(tf.keras.layers.MaxPooling2D((2, 2)))
+            model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
+            model.add(tf.keras.layers.Flatten())
+            model.add(tf.keras.layers.Dense(64, activation='relu'))
+            model.add(tf.keras.layers.Dense(10, activation='softmax'))
+            lr = 0.01
 
     # initialize graph
     G = Graph(rank, size, mpi, args.graph_type, weight_type=args.weight_type)

@@ -122,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument('--name', '-n', default='FedAvg', type=str, help='experiment name')
     parser.add_argument('--experiment', '-exp', default='Cifar10', type=str, help='experiment type')
     parser.add_argument('--skew', '-s', default=0.75, type=float, help='skew factor')
-    parser.add_argument('--graph_type', default='fully-connected', type=str, help='baseline topology')
+    parser.add_argument('--graph_type', default='ring', type=str, help='baseline topology')
     parser.add_argument('--lr', default=0.0001, type=float, help='learning rate')
     parser.add_argument('--epochs', '-e', default=20, type=int, help='total epochs')
     parser.add_argument('--bs', default=256, type=int, help='train batch size for each worker')
