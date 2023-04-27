@@ -32,7 +32,6 @@ def load_CIFAR_batch(filename):
         X = datadict['data']
         Y = datadict['labels']
         X = X.reshape(10000, 32, 32, 3)
-        #X = X.reshape(10000,3072)
         Y = np.array(Y)
         return X, Y
 
@@ -171,11 +170,9 @@ if __name__ == "__main__":
             model.add(tf.keras.layers.Flatten())
             model.add(tf.keras.layers.Dense(64, activation='relu'))
             model.add(tf.keras.layers.Dense(10, activation='softmax'))
-
             lr = 0.01
 
         else:
-
             model = ResNet18(10)
             model.build(input_shape=(None, 32, 32, 3))
             lr = args.lr
