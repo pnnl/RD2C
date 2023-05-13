@@ -127,7 +127,6 @@ if __name__ == "__main__":
     parser.add_argument('--epochs', '-e', default=20, type=int, help='total epochs')
     parser.add_argument('--bs', default=256, type=int, help='train batch size for each worker')
     parser.add_argument('--multi_model', default=1, type=int, help='workers use different models during training')
-    parser.add_argument('--train_split', default=0.8, type=float, help='train data percent')
     parser.add_argument('--coord_size', default=256, type=int, help='coordination dataset size')
     parser.add_argument('--L1', default=1., type=float, help='train set loss weighting')
     parser.add_argument('--L2', default=1., type=float, help='coordination set loss weighting')
