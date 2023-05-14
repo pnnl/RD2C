@@ -77,33 +77,8 @@ def unpack_data(directory_path, datatype='test-loss.log', epochs=10, num_workers
     return data
 
 
-def process_data(workers, epochs=50, coordination_size=128, graph_type='ring', resultFolder='Results/Darknet/',
+def process_data(workers, L3_vals, epochs=50, coordination_size=128, graph_type='ring', resultFolder='Results/Darknet/',
                  method='middle', runs=6):
-
-    if method == 'middle':
-        L3_vals = [0.0, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5]
-        if graph_type == 'ring':
-            resultFolder = resultFolder + str(workers) + 'WorkerRing/MIDDLE-'
-        elif graph_type == 'fully-connected':
-            resultFolder = resultFolder + str(workers) + 'WorkerFC/MIDDLE-'
-        elif graph_type == 'clique-ring':
-            resultFolder = resultFolder + str(workers) + 'WorkerROC/MIDDLE-'
-    elif method == 'fedavg-large':
-        L3_vals = [0.0]
-        if graph_type == 'ring':
-            resultFolder = resultFolder + 'FedAvgLarge/' + str(workers) + 'WorkerRing/FedAvg-'
-        elif graph_type == 'fully-connected':
-            resultFolder = resultFolder + 'FedAvgLarge/' + str(workers) + 'WorkerFC/FedAvg-'
-        elif graph_type == 'clique-ring':
-            resultFolder = resultFolder + 'FedAvgLarge/' + str(workers) + 'WorkerROC/FedAvg-'
-    elif method == 'fedavg-small':
-        L3_vals = [0.0]
-        if graph_type == 'ring':
-            resultFolder = resultFolder + 'FedAvgSmall/' + str(workers) + 'WorkerRing/FedAvg-'
-        elif graph_type == 'fully-connected':
-            resultFolder = resultFolder + 'FedAvgSmall/' + str(workers) + 'WorkerFC/FedAvg-'
-        elif graph_type == 'clique-ring':
-            resultFolder = resultFolder + 'FedAvgSmall/' + str(workers) + 'WorkerROC/FedAvg-'
 
     # L3_vals = [0, 1. / 20, 1. / 10, 1./6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
     # L3_vals = [0.0, 1. / 20, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
@@ -138,7 +113,7 @@ def process_data(workers, epochs=50, coordination_size=128, graph_type='ring', r
 
     return mean_l, min_l, max_l, mean_a, min_a, max_a, len(L3_vals)
 
-def results_bar_chart(mean_accs, mean_losses, save_fig=True):
+def results_bar_chart(mean_accs, mean_losses, save_fig=True, dataset='Darknet'):
 
     m_len = len(mean_accs)
     final_mean_accs = np.empty(m_len)
@@ -147,8 +122,11 @@ def results_bar_chart(mean_accs, mean_losses, save_fig=True):
         final_mean_accs[i] = mean_accs[i][-1]
         final_mean_losses[i] = mean_losses[i][-1]
 
-    X = [r'$\lambda_3 = 0$', r'$\lambda_3 = 1/10$', r'$\lambda_3 = 1/4$', r'$\lambda_3 = 1/3$', r'$\lambda_3 = 1/2$',
-         r'$\lambda_3 = 3/5$']
+    if dataset == 'Darknet':
+        X = [r'$\lambda = 0$', r'$\lambda = 1/10$', r'$\lambda = 1/4$', r'$\lambda = 1/3$', r'$\lambda = 1/2$',
+             r'$\lambda = 3/5$']
+    else:
+        X = [r'$\lambda = 0$', r'$\lambda = 1/3$']
 
     X_axis = np.arange(len(X))
 
@@ -182,8 +160,13 @@ def results_bar_chart(mean_accs, mean_losses, save_fig=True):
         i += 1
 
     plt.xticks(X_axis, X)
-    plt.ylim(0, 100)
-    plt.xlabel(r"Varying Collaboration Weighting $\lambda_3$", fontsize=15)
+
+    if dataset == 'Darknet':
+        plt.ylim(0, 100)
+    else:
+        plt.ylim(0, np.ceil(np.max(final_mean_accs)*10)*10)
+
+    plt.xlabel(r"Varying Collaboration Weighting $\lambda$", fontsize=15)
     plt.ylabel("Final Average Test Accuracy (%) / Loss", fontsize=15)
     plt.legend(loc='best', ncol=2, fancybox=True, framealpha=0)
     saveFilename = "varyingL3Bar.pdf"
@@ -194,10 +177,15 @@ def results_bar_chart(mean_accs, mean_losses, save_fig=True):
         plt.show()
 
 
-def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, plot_loss=True, save_fig=True):
-    legend_vals = ['0', '1/10', '1/4', '1/3', '1/2', '3/5']
+def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, dataset='Darknet', plot_loss=True,
+                  save_fig=True):
+    if dataset == 'Darknet':
+        legend_vals = ['0', '1/10', '1/4', '1/3', '1/2', '3/5']
+    else:
+        legend_vals = ['0', '1/3']
+
     for i in range(lenL3):
-        mylegend = r'$\lambda_3 = $' + legend_vals[i]
+        mylegend = r'$\lambda = $' + legend_vals[i]
         if plot_loss:
             y_mean = mean_l[i]
             y_min = min_l[i]
@@ -212,18 +200,20 @@ def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, 
             plt.fill_between(range(1, epochs + 1), y_min, y_max, alpha=0.2)  # , color=colors[ind])
 
     if plot_loss:
-        plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
+        # plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
+        plt.legend(loc='lower right', ncol=2, fancybox=True, framealpha=0.5)
         plt.xlabel('Epoch', fontsize=15)
         plt.ylabel('Average Test Loss', fontsize=15)
         plt.grid()
-        plt.xlim([1, 50])
+        plt.xlim([1, epochs])
         saveFilename = "test-loss-" + str(workers) + graph_type + ".pdf"
     else:
-        plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
+        # plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
+        plt.legend(loc='lower right', ncol=2, fancybox=True, framealpha=0.5)
         plt.xlabel('Epoch', fontsize=15)
         plt.ylabel('Average Test Accuracy', fontsize=15)
         plt.grid()
-        plt.xlim([1, 50])
+        plt.xlim([1, epochs])
         # plt.ylim([0.845, 0.87])
         # plt.ylim([0.835, 0.885])
         saveFilename = "test-acc-" + str(workers) + graph_type + ".pdf"
@@ -239,103 +229,245 @@ if __name__ == "__main__":
 
     plot_loss = False
     workers = 16
-    graph_type = 'ring'
-    resultFolder = 'Results/Darknet/'
-    method = 'fedavg-large'
+    graph_type = 'clique-ring'
+    dataset = 'Cifar10'
 
-    mean_l, min_l, max_l, mean_a, min_a, max_a,  lenL3 = process_data(workers, graph_type=graph_type, method=method)
-    plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, plot_loss=plot_loss, save_fig=False)
-    if method == 'middle':
-        results_bar_chart(mean_a, mean_l, save_fig=False)
+    # resultFolder = 'Results/Darknet/'
+    # method = 'fedavg-large'
 
-    #'''
-    # FedAvg Bar Chart
-    mean_l, _, _, mean_a, _, _, _ = process_data(16, graph_type='fully-connected', method='fedavg-large')
-    middle_mean_l, _, _, middle_mean_a, _, _, _ = process_data(16, graph_type='fully-connected', method='middle')
-    mean_l = mean_l[-1][-1]
-    mean_a = mean_a[-1][-1]
-    middle_nol3_l = middle_mean_l[0][-1]
-    middle_nol3_a = middle_mean_a[0][-1]
-    middle_l3_1L = middle_mean_l[1][-1]
-    middle_l3_1A = middle_mean_a[1][-1]
-    middle_l3_2L = middle_mean_l[2][-1]
-    middle_l3_2A = middle_mean_a[2][-1]
-    middle_l3_3L = middle_mean_l[3][-1]
-    middle_l3_3A = middle_mean_a[3][-1]
-    save_fig = True
+    resultFolder = 'Results/Cifar10/Paper/'
+    method = 'middle'
+    small_model = True
+    mixed_model = False
 
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax2 = ax.twinx()
+    if dataset == 'Cifar10':
 
-    accs = np.array([mean_a, middle_nol3_a, middle_l3_1A, middle_l3_2A, middle_l3_3A])
-    losses = np.array([mean_l, middle_nol3_l, middle_l3_1L, middle_l3_2L, middle_l3_3L])
-    params = np.array([347382, 0, 512, 512, 512])
-    # log_params = np.where(params > 0, np.log(params), 0)
+        L3_vals = [0.0, 1./3]
+        #L3_vals = [1./3]
 
-    X = ['FedAvg', 'No Collaboration', r'MIDDLE $\lambda_3 = 1/10$', r'MIDDLE $\lambda_3 = 1/4$', r'MIDDLE $\lambda_3 = 1/3$']
-    X_axis = np.arange(len(X))
+        if small_model:
+            if method == 'middle':
+                resultFolder = resultFolder + 'smMIDDLE-'
+            else:
+                resultFolder = resultFolder + 'smFedAvg-'
+        elif mixed_model:
+            if method == 'middle':
+                resultFolder = resultFolder + 'mmMIDDLE-'
+            else:
+                print('Error!')
+                exit()
+        else:
+            if method == 'middle':
+                resultFolder = resultFolder + 'lmMIDDLE-'
+            else:
+                resultFolder = resultFolder + 'lmFedAvg-'
 
-    na = ax2.bar(np.nan, np.nan, 0.5, label='Total Communicated \n Parameters', color='lightgreen')
-    # graph = ax.bar(X_axis, accs * 100, 0.5, label='Average \n Test Accuracy', color='skyblue')
-    graph2 = ax2.bar(X_axis + 0.2, losses, 0.4, label='Average \n Test Loss', color='khaki')
-    graph3 = ax.bar(X_axis - 0.2, params, 0.4, label='Total Communicated \n Parameters', color='lightgreen')
+        mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3 = process_data(workers, L3_vals, epochs=100, #runs=2,
+                                                                         graph_type=graph_type, coordination_size=256,
+                                                                         method=method, resultFolder=resultFolder)
+        plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=100, plot_loss=plot_loss,
+                      dataset=dataset, save_fig=False)
+        if method == 'middle':
+            results_bar_chart(mean_a, mean_l, dataset=dataset, save_fig=False)
 
-    i = 0
-    for p in graph3:
-        width = p.get_width()
-        height = p.get_height()
-        x, y = p.get_xy()
-        ax.text(x + width / 2,
-                 y + height * 1.01,
-                 str(params[i]),
-                 ha='center',
-                 weight='bold',
-                 fontsize=10)
-        i += 1
+        # FedAvg Bar Chart
+        mean_l, _, _, mean_a, _, _, _ = process_data(4, L3_vals, graph_type=graph_type, epochs=200,
+                                                     method='fedavg-small', coordination_size=256,
+                                                     resultFolder='Results/Cifar10/Paper/smFedAvg-')
+        middle_mean_l, _, _, middle_mean_a, _, _, _ = process_data(4, L3_vals, graph_type=graph_type,
+                                                                   coordination_size=256, method='middle', epochs=100,
+                                                                   resultFolder=resultFolder)
+        mean_l = mean_l[-1][-1]
+        mean_a = mean_a[-1][-1]
+        middle_nol3_l = middle_mean_l[0][-1]
+        middle_nol3_a = middle_mean_a[0][-1]
+        middle_l3_1L = middle_mean_l[1][-1]
+        middle_l3_1A = middle_mean_a[1][-1]
+        save_fig = False
 
-    #i = 0
-    #for p in graph:
-    #    width = p.get_width()
-    #    height = p.get_height()
-    #    x, y = p.get_xy()
-    #    ax.text(x + width / 2,
-    #             y + height * 1.01,
-    #             str(round(accs[i] * 100, 2)) + '%',
-    #             ha='center',
-    #             weight='bold',
-    #             fontsize=10)
-    #    i += 1
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax2 = ax.twinx()
 
-    i = 0
-    for p in graph2:
-        width = p.get_width()
-        height = p.get_height()
-        x, y = p.get_xy()
-        ax2.text(x + width / 2,
-                 y + height + 0.01,
-                 str(round(losses[i], 2)),
-                 ha='center',
-                 weight='bold',
-                 fontsize=10)
-        i += 1
+        accs = np.array([mean_a, middle_nol3_a, middle_l3_1A])
+        losses = np.array([mean_l, middle_nol3_l, middle_l3_1L])
+        params = np.array([122570, 0, 2560])
 
-    #multicolor_ylabel(ax, ('Test Accuracy (%)', 'and', 'Test Loss'), ('y', 'k', 'b'), axis='y', fontsize=15)
-    ax2.set_ylabel('Average Test Loss', fontsize=15, color='y')
-    ax.set_ylabel('Communicated Parameters', fontsize=15, color='g')
-    ax.set_yscale('symlog')
+        X = ['FedAvg', 'No Collaboration', r'MIDDLE $\lambda = 1/3$']
+        X_axis = np.arange(len(X))
 
-    legend = ax2.legend(loc='best', ncol=3, fancybox=True, framealpha=0)
+        na = ax2.bar(np.nan, np.nan, 0.5, label='Total Communicated \n Parameters', color='lightgreen')
+        graph2 = ax2.bar(X_axis + 0.2, accs * 100, 0.4, label='Average \n Test Accuracy', color='khaki')
+        # graph2 = ax2.bar(X_axis + 0.2, losses, 0.4, label='Average \n Test Loss', color='khaki')
+        graph3 = ax.bar(X_axis - 0.2, params, 0.4, label='Total Communicated \n Parameters', color='lightgreen')
 
-    ax.set_xticks(X_axis, X, rotation=20, ha='right')
-    ax2.set_ylim(0, 15)
-    ax.set_ylim(1, 1e6)
-    ax.set_yticks([0, 100, 10000, 1000000])
-    # ax.tight_layout()
-    # for t in legend.get_texts():
-    #     t.set_ha('center')
-    saveFilename = "fedavg-comparison.pdf"
-    if save_fig:
-        plt.savefig(saveFilename, format="pdf")
-    else:
-        plt.show()
-    #'''
+        i = 0
+        for p in graph3:
+            width = p.get_width()
+            height = p.get_height()
+            x, y = p.get_xy()
+            ax.text(x + width / 2,
+                    y + height * 1.01,
+                    str(params[i]),
+                    ha='center',
+                    weight='bold',
+                    fontsize=10)
+            i += 1
+
+        i = 0
+        for p in graph2:
+            width = p.get_width()
+            height = p.get_height()
+            x, y = p.get_xy()
+            ax2.text(x + width / 2,
+                     y + height + 0.01,
+                     str(round(accs[i]*100, 1)),
+                     ha='center',
+                     weight='bold',
+                     fontsize=10)
+            i += 1
+
+        ax2.set_ylabel('Average Test Accuracy', fontsize=15, color='y')
+        ax.set_ylabel('Communicated Parameters', fontsize=15, color='g')
+        ax.set_yscale('symlog')
+
+        legend = ax2.legend(loc='best', ncol=3, fancybox=True, framealpha=0)
+
+        ax.set_xticks(X_axis, X, rotation=20, ha='right')
+        ax2.set_ylim(0, 100)
+        ax.set_ylim(1, 1e6)
+        ax.set_yticks([0, 100, 10000, 1000000])
+        # ax.tight_layout()
+        # for t in legend.get_texts():
+        #     t.set_ha('center')
+        saveFilename = "fedavg-comparison.pdf"
+        if save_fig:
+            plt.savefig(saveFilename, format="pdf")
+        else:
+            plt.show()
+
+    if dataset == 'Darknet':
+
+        if method == 'middle':
+            L3_vals = [0.0, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5]
+            if graph_type == 'ring':
+                resultFolder = resultFolder + str(workers) + 'WorkerRing/MIDDLE-'
+            elif graph_type == 'fully-connected':
+                resultFolder = resultFolder + str(workers) + 'WorkerFC/MIDDLE-'
+            elif graph_type == 'clique-ring':
+                resultFolder = resultFolder + str(workers) + 'WorkerROC/MIDDLE-'
+        elif method == 'fedavg-large':
+            L3_vals = [0.0]
+            if graph_type == 'ring':
+                resultFolder = resultFolder + 'FedAvgLarge/' + str(workers) + 'WorkerRing/FedAvg-'
+            elif graph_type == 'fully-connected':
+                resultFolder = resultFolder + 'FedAvgLarge/' + str(workers) + 'WorkerFC/FedAvg-'
+            elif graph_type == 'clique-ring':
+                resultFolder = resultFolder + 'FedAvgLarge/' + str(workers) + 'WorkerROC/FedAvg-'
+        elif method == 'fedavg-small':
+            L3_vals = [0.0]
+            if graph_type == 'ring':
+                resultFolder = resultFolder + 'FedAvgSmall/' + str(workers) + 'WorkerRing/FedAvg-'
+            elif graph_type == 'fully-connected':
+                resultFolder = resultFolder + 'FedAvgSmall/' + str(workers) + 'WorkerFC/FedAvg-'
+            elif graph_type == 'clique-ring':
+                resultFolder = resultFolder + 'FedAvgSmall/' + str(workers) + 'WorkerROC/FedAvg-'
+
+        mean_l, min_l, max_l, mean_a, min_a, max_a,  lenL3 = process_data(workers, L3_vals, graph_type=graph_type,
+                                                                          method=method, resultFolder=resultFolder)
+        plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, plot_loss=plot_loss, save_fig=False)
+        if method == 'middle':
+            results_bar_chart(mean_a, mean_l, save_fig=False)
+
+        #'''
+        # FedAvg Bar Chart
+        mean_l, _, _, mean_a, _, _, _ = process_data(16, L3_vals, graph_type='fully-connected', method='fedavg-large',
+                                                     resultFolder=resultFolder)
+        middle_mean_l, _, _, middle_mean_a, _, _, _ = process_data(16, L3_vals, graph_type='fully-connected',
+                                                                   method='middle')
+        mean_l = mean_l[-1][-1]
+        mean_a = mean_a[-1][-1]
+        middle_nol3_l = middle_mean_l[0][-1]
+        middle_nol3_a = middle_mean_a[0][-1]
+        middle_l3_1L = middle_mean_l[1][-1]
+        middle_l3_1A = middle_mean_a[1][-1]
+        middle_l3_2L = middle_mean_l[2][-1]
+        middle_l3_2A = middle_mean_a[2][-1]
+        middle_l3_3L = middle_mean_l[3][-1]
+        middle_l3_3A = middle_mean_a[3][-1]
+        save_fig = True
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax2 = ax.twinx()
+
+        accs = np.array([mean_a, middle_nol3_a, middle_l3_1A, middle_l3_2A, middle_l3_3A])
+        losses = np.array([mean_l, middle_nol3_l, middle_l3_1L, middle_l3_2L, middle_l3_3L])
+        params = np.array([347382, 0, 512, 512, 512])
+        # log_params = np.where(params > 0, np.log(params), 0)
+
+        X = ['FedAvg', 'No Collaboration', r'MIDDLE $\lambda = 1/10$', r'MIDDLE $\lambda = 1/4$', r'MIDDLE $\lambda = 1/3$']
+        X_axis = np.arange(len(X))
+
+        na = ax2.bar(np.nan, np.nan, 0.5, label='Total Communicated \n Parameters', color='lightgreen')
+        # graph = ax.bar(X_axis, accs * 100, 0.5, label='Average \n Test Accuracy', color='skyblue')
+        graph2 = ax2.bar(X_axis + 0.2, losses, 0.4, label='Average \n Test Loss', color='khaki')
+        graph3 = ax.bar(X_axis - 0.2, params, 0.4, label='Total Communicated \n Parameters', color='lightgreen')
+
+        i = 0
+        for p in graph3:
+            width = p.get_width()
+            height = p.get_height()
+            x, y = p.get_xy()
+            ax.text(x + width / 2,
+                     y + height * 1.01,
+                     str(params[i]),
+                     ha='center',
+                     weight='bold',
+                     fontsize=10)
+            i += 1
+
+        #i = 0
+        #for p in graph:
+        #    width = p.get_width()
+        #    height = p.get_height()
+        #    x, y = p.get_xy()
+        #    ax.text(x + width / 2,
+        #             y + height * 1.01,
+        #             str(round(accs[i] * 100, 2)) + '%',
+        #             ha='center',
+        #             weight='bold',
+        #             fontsize=10)
+        #    i += 1
+
+        i = 0
+        for p in graph2:
+            width = p.get_width()
+            height = p.get_height()
+            x, y = p.get_xy()
+            ax2.text(x + width / 2,
+                     y + height + 0.01,
+                     str(round(losses[i], 2)),
+                     ha='center',
+                     weight='bold',
+                     fontsize=10)
+            i += 1
+
+        #multicolor_ylabel(ax, ('Test Accuracy (%)', 'and', 'Test Loss'), ('y', 'k', 'b'), axis='y', fontsize=15)
+        ax2.set_ylabel('Average Test Loss', fontsize=15, color='y')
+        ax.set_ylabel('Communicated Parameters', fontsize=15, color='g')
+        ax.set_yscale('symlog')
+
+        legend = ax2.legend(loc='best', ncol=3, fancybox=True, framealpha=0)
+
+        ax.set_xticks(X_axis, X, rotation=20, ha='right')
+        ax2.set_ylim(0, 15)
+        ax.set_ylim(1, 1e6)
+        ax.set_yticks([0, 100, 10000, 1000000])
+        # ax.tight_layout()
+        # for t in legend.get_texts():
+        #     t.set_ha('center')
+        saveFilename = "fedavg-comparison.pdf"
+        if save_fig:
+            plt.savefig(saveFilename, format="pdf")
+        else:
+            plt.show()
+        #'''

@@ -10,7 +10,7 @@ from misc import Recorder
 from network import Graph
 import argparse
 from models.resnet import ResNet18
-# tf.config.set_visible_devices([], 'GPU')
+tf.config.set_visible_devices([], 'GPU')
 
 def unpickle(file):
     import pickle
@@ -174,6 +174,8 @@ if __name__ == "__main__":
         model.add(tf.keras.layers.Dense(10, activation='softmax'))
         lr = 0.01
 
+    model.summary()
+
     # initialize graph
     G = Graph(rank, size, mpi, args.graph_type, weight_type=args.weight_type)
 
@@ -203,10 +205,10 @@ if __name__ == "__main__":
     # Output Path
     outputPath = 'Results/' + args.experiment
     saveFolder_fedavg = outputPath + '/' + args.name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' +\
-                        str(args.coord_size) + 'Csize-' + str(args.graph_type)
+                        str(args.coord_size) + 'Csize-' + str(args.skew) + 'Skew-' + str(args.graph_type)
 
-    recorder_fedavg = Recorder(args.name, size, rank, args.graph_type, epochs, 0, args.coord_size, outputPath,
-                               save_folder_name=saveFolder_fedavg)
+    recorder_fedavg = Recorder(args.name, size, rank, args.graph_type, epochs, 0, args.coord_size, args.skew,
+                               outputPath, save_folder_name=saveFolder_fedavg)
 
     mpi.Barrier()
 

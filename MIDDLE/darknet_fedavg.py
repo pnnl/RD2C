@@ -121,10 +121,10 @@ if __name__ == "__main__":
     # Output Path
     outputPath = 'Results/' + args.experiment
     saveFolder_fedavg = outputPath + '/' + args.name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
-                        str(coordination_size) + 'Csize-' + str(args.graph_type)
+                        str(coordination_size) + 'Csize-' + str(args.skew) + 'Skew-' + str(args.graph_type)
 
-    recorder_fedavg = Recorder(args.name, size, rank, args.graph_type, epochs, 0, coordination_size, outputPath,
-                               save_folder_name=saveFolder_fedavg)
+    recorder_fedavg = Recorder(args.name, size, rank, args.graph_type, epochs, 0, coordination_size, args.skew,
+                               outputPath, save_folder_name=saveFolder_fedavg)
 
     mpi.Barrier()
 

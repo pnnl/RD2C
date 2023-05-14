@@ -13,8 +13,8 @@ module load openmpi/4.1.4
 module load cuda/11.4
 source /people/born669/middle/bin/activate
 
-mpirun -n 16 python cifar10.py --name 0.5smMIDDLE-1 --randomSeed 4282 --epochs 100 --graph_type fully-connected --large_model 0 --multi_model 0 --skew 0.5
-mpirun -n 16 python cifar10.py --name 0.5smMIDDLE-2 --randomSeed 42 --epochs 100 --graph_type fully-connected --large_model 0 --multi_model 0 --skew 0.5
-mpirun -n 16 python cifar10.py --name 0.5smMIDDLE-3 --randomSeed 1132 --epochs 100 --graph_type fully-connected --large_model 0 --multi_model 0 --skew 0.5
-mpirun -n 16 python cifar10.py --name 0.5smMIDDLE-4 --randomSeed 2382 --epochs 100 --graph_type fully-connected --large_model 0 --multi_model 0 --skew 0.5
-mpirun -n 16 python cifar10.py --name 0.5smMIDDLE-5 --randomSeed 91162 --epochs 100 --graph_type fully-connected --large_model 0 --multi_model 0 --skew 0.5
+mpirun -n 16 python cifar10.py --name smMIDDLE-1 --randomSeed 4282 --epochs 100 --graph_type fully-connected --large_model 0 --multi_model 0 --skew 0.5
+mpirun -n 16 python cifar10.py --name smMIDDLE-2 --randomSeed 42 --epochs 100 --graph_type fully-connected --large_model 0 --multi_model 0 --skew 0.5
+mpirun -n 16 python cifar10.py --name smMIDDLE-3 --randomSeed 1132 --epochs 100 --graph_type fully-connected --large_model 0 --multi_model 0 --skew 0.5
+mpirun -n 16 python cifar10.py --name smMIDDLE-4 --randomSeed 2382 --epochs 100 --graph_type fully-connected --large_model 0 --multi_model 0 --skew 0.5
+mpirun -n 16 python cifar10.py --name smMIDDLE-5 --randomSeed 91162 --epochs 100 --graph_type fully-connected --large_model 0 --multi_model 0 --skew 0.5

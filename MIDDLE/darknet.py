@@ -125,9 +125,11 @@ if __name__ == "__main__":
     # Output Path
     outputPath = 'Results/' + args.experiment
     saveFolder_middle = outputPath + '/' + args.name + '-' + str(size) + 'Worker-' + str(epochs) + 'Epochs-' + \
-                        str(L3) + 'L3Penalty-' + str(coordination_size) + 'Csize-' + str(args.graph_type)
+                        str(L3) + 'L3Penalty-' + str(coordination_size) + 'Csize-' + str(args.skew) + 'Skew-' \
+                        + str(args.graph_type)
 
-    recorder_middle = Recorder(args.name, size, rank, args.graph_type, epochs, L3, coordination_size, outputPath)
+    recorder_middle = Recorder(args.name, size, rank, args.graph_type, epochs, L3, coordination_size, args.skew,
+                               outputPath)
 
     mpi.Barrier()
 
