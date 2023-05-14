@@ -174,8 +174,6 @@ if __name__ == "__main__":
         model.add(tf.keras.layers.Dense(10, activation='softmax'))
         lr = 0.01
 
-    model.summary()
-
     # initialize graph
     G = Graph(rank, size, mpi, args.graph_type, weight_type=args.weight_type)
 
