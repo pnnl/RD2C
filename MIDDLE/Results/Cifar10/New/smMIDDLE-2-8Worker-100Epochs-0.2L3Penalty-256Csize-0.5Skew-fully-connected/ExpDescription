@@ -1,0 +1,1 @@
+Namespace(name='smMIDDLE-2', experiment='Cifar10', skew=0.5, graph_type='fully-connected', lr=0.0001, epochs=100, bs=256, multi_model=0, coord_size=256, L1=1.0, L2=1.0, L3=0.5, weight_type='uniform-neighbor-no-self-weight', randomSeed=42, large_model=0)
