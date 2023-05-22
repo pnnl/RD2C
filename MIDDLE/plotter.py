@@ -78,7 +78,7 @@ def unpack_data(directory_path, datatype='test-loss.log', epochs=10, num_workers
 
 
 def process_data(workers, L3_vals, epochs=50, coordination_size=128, graph_type='ring', resultFolder='Results/Darknet/',
-                 method='middle', runs=6):
+                 method='middle', runs=6, skew=0.5):
 
     # L3_vals = [0, 1. / 20, 1. / 10, 1./6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
     # L3_vals = [0.0, 1. / 20, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
@@ -94,10 +94,11 @@ def process_data(workers, L3_vals, epochs=50, coordination_size=128, graph_type=
         for run in range(1, runs):
             if method == 'middle':
                 folder = resultFolder + str(run) + '-' + str(workers) + 'Worker-' + str(epochs) + 'Epochs-' + \
-                        str(L3) + 'L3Penalty-' + str(coordination_size) + 'Csize-' + str(graph_type)
+                        str(L3) + 'L3Penalty-' + str(coordination_size) + 'Csize-' + str(skew) + 'Skew-' \
+                        + str(graph_type)
             elif method[:3] == 'fed':
                 folder = resultFolder + str(run) + '-' + str(workers) + 'Worker-' + str(epochs) + 'Epochs-' + \
-                         str(coordination_size) + 'Csize-' + str(graph_type)
+                         str(coordination_size) + 'Csize-' + str(skew) + 'Skew-' + str(graph_type)
 
             test_loss_data = unpack_data(folder, epochs=epochs, num_workers=workers)
             test_acc_data = unpack_data(folder, datatype='test-acc.log', epochs=epochs, num_workers=workers)
@@ -123,10 +124,11 @@ def results_bar_chart(mean_accs, mean_losses, save_fig=True, dataset='Darknet'):
         final_mean_losses[i] = mean_losses[i][-1]
 
     if dataset == 'Darknet':
-        X = [r'$\lambda = 0$', r'$\lambda = 1/10$', r'$\lambda = 1/4$', r'$\lambda = 1/3$', r'$\lambda = 1/2$',
-             r'$\lambda = 3/5$']
+        X = [r'$\lambda = 0$', r'$\lambda = 2/9$', r'$\lambda = 2/3$', r'$\lambda = 1$', r'$\lambda = 2$',
+             r'$\lambda = 3$']
     else:
-        X = [r'$\lambda = 0$', r'$\lambda = 1/3$']
+        # X = [r'$\lambda = 0$', r'$\lambda = 1/2$', r'$\lambda = 1$']
+        X = [r'$\lambda = 0$', r'$\lambda = 1/4$', r'$\lambda = 1/2$', r'$\lambda = 1$']
 
     X_axis = np.arange(len(X))
 
@@ -164,12 +166,12 @@ def results_bar_chart(mean_accs, mean_losses, save_fig=True, dataset='Darknet'):
     if dataset == 'Darknet':
         plt.ylim(0, 100)
     else:
-        plt.ylim(0, np.ceil(np.max(final_mean_accs)*10)*10)
+        plt.ylim(0, 10 + np.ceil(np.max(final_mean_accs)*10)*10)
 
     plt.xlabel(r"Varying Collaboration Weighting $\lambda$", fontsize=15)
     plt.ylabel("Final Average Test Accuracy (%) / Loss", fontsize=15)
     plt.legend(loc='best', ncol=2, fancybox=True, framealpha=0)
-    saveFilename = "varyingL3Bar.pdf"
+    saveFilename = "varyingL3Bar-" + str(workers) + graph_type + ".pdf"
     if save_fig:
         plt.savefig(saveFilename, format="pdf")
         # tikzplotlib.save(saveFilename[:-4] + ".tex")
@@ -180,9 +182,10 @@ def results_bar_chart(mean_accs, mean_losses, save_fig=True, dataset='Darknet'):
 def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, dataset='Darknet', plot_loss=True,
                   save_fig=True):
     if dataset == 'Darknet':
-        legend_vals = ['0', '1/10', '1/4', '1/3', '1/2', '3/5']
+        legend_vals = ['0', '2/9', '2/3', '1', '2', '3']
     else:
-        legend_vals = ['0', '1/3']
+        # legend_vals = ['0', '1/2', '1']
+        legend_vals = ['0', '1/4', '1/2', '1']
 
     for i in range(lenL3):
         mylegend = r'$\lambda = $' + legend_vals[i]
@@ -200,16 +203,20 @@ def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, 
             plt.fill_between(range(1, epochs + 1), y_min, y_max, alpha=0.2)  # , color=colors[ind])
 
     if plot_loss:
-        # plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
-        plt.legend(loc='lower right', ncol=2, fancybox=True, framealpha=0.5)
+        if dataset == 'Darknet':
+            plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
+        else:
+            plt.legend(loc='lower right', ncol=2, fancybox=True, framealpha=0.5)
         plt.xlabel('Epoch', fontsize=15)
         plt.ylabel('Average Test Loss', fontsize=15)
         plt.grid()
         plt.xlim([1, epochs])
         saveFilename = "test-loss-" + str(workers) + graph_type + ".pdf"
     else:
-        # plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
-        plt.legend(loc='lower right', ncol=2, fancybox=True, framealpha=0.5)
+        if dataset == 'Darknet':
+            plt.legend(loc='upper left', ncol=2, fancybox=True, framealpha=0.5)
+        else:
+            plt.legend(loc='lower right', ncol=2, fancybox=True, framealpha=0.5)
         plt.xlabel('Epoch', fontsize=15)
         plt.ylabel('Average Test Accuracy', fontsize=15)
         plt.grid()
@@ -224,26 +231,28 @@ def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, 
     else:
         plt.show()
 
+    plt.clf()
 
 if __name__ == "__main__":
 
     plot_loss = False
     workers = 16
     graph_type = 'clique-ring'
-    dataset = 'Cifar10'
-
+    # dataset = 'Darknet'
     # resultFolder = 'Results/Darknet/'
-    # method = 'fedavg-large'
+    #method = 'fedavg-large'
 
-    resultFolder = 'Results/Cifar10/Paper/'
+    dataset = 'Cifar10'
+    resultFolder = 'Results/Cifar10/New/'
     method = 'middle'
     small_model = True
     mixed_model = False
+    save_fig = True
 
     if dataset == 'Cifar10':
 
-        L3_vals = [0.0, 1./3]
-        #L3_vals = [1./3]
+        # L3_vals = [0.0, 0.2, 1./3]
+        L3_vals = [0.0, 1./9, 0.2, 1./3]
 
         if small_model:
             if method == 'middle':
@@ -266,15 +275,15 @@ if __name__ == "__main__":
                                                                          graph_type=graph_type, coordination_size=256,
                                                                          method=method, resultFolder=resultFolder)
         plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=100, plot_loss=plot_loss,
-                      dataset=dataset, save_fig=False)
+                      dataset=dataset, save_fig=save_fig)
         if method == 'middle':
-            results_bar_chart(mean_a, mean_l, dataset=dataset, save_fig=False)
+            results_bar_chart(mean_a, mean_l, dataset=dataset, save_fig=save_fig)
 
         # FedAvg Bar Chart
-        mean_l, _, _, mean_a, _, _, _ = process_data(4, L3_vals, graph_type=graph_type, epochs=200,
+        mean_l, _, _, mean_a, _, _, _ = process_data(16, L3_vals, graph_type=graph_type, epochs=100,
                                                      method='fedavg-small', coordination_size=256,
-                                                     resultFolder='Results/Cifar10/Paper/smFedAvg-')
-        middle_mean_l, _, _, middle_mean_a, _, _, _ = process_data(4, L3_vals, graph_type=graph_type,
+                                                     resultFolder='Results/Cifar10/New/smFedAvg-')
+        middle_mean_l, _, _, middle_mean_a, _, _, _ = process_data(16, L3_vals, graph_type=graph_type,
                                                                    coordination_size=256, method='middle', epochs=100,
                                                                    resultFolder=resultFolder)
         mean_l = mean_l[-1][-1]
@@ -283,16 +292,20 @@ if __name__ == "__main__":
         middle_nol3_a = middle_mean_a[0][-1]
         middle_l3_1L = middle_mean_l[1][-1]
         middle_l3_1A = middle_mean_a[1][-1]
-        save_fig = False
+        middle_l3_2L = middle_mean_l[2][-1]
+        middle_l3_2A = middle_mean_a[2][-1]
+        middle_l3_3L = middle_mean_l[3][-1]
+        middle_l3_3A = middle_mean_a[3][-1]
 
+        plt.clf()
         fig, ax = plt.subplots(figsize=(8, 6))
         ax2 = ax.twinx()
 
-        accs = np.array([mean_a, middle_nol3_a, middle_l3_1A])
-        losses = np.array([mean_l, middle_nol3_l, middle_l3_1L])
-        params = np.array([122570, 0, 2560])
+        accs = np.array([mean_a, middle_nol3_a, middle_l3_1A, middle_l3_2A, middle_l3_3A])
+        losses = np.array([mean_l, middle_nol3_l, middle_l3_1L, middle_l3_2L, middle_l3_3L])
+        params = np.array([122570, 0, 2560, 2560, 2560])
 
-        X = ['FedAvg', 'No Collaboration', r'MIDDLE $\lambda = 1/3$']
+        X = ['FedAvg', 'No Collaboration', r'MIDDLE $\lambda = 1/4$', r'MIDDLE $\lambda = 1/2$', r'MIDDLE $\lambda = 1$']
         X_axis = np.arange(len(X))
 
         na = ax2.bar(np.nan, np.nan, 0.5, label='Total Communicated \n Parameters', color='lightgreen')
@@ -339,13 +352,14 @@ if __name__ == "__main__":
         # ax.tight_layout()
         # for t in legend.get_texts():
         #     t.set_ha('center')
-        saveFilename = "fedavg-comparison.pdf"
+        saveFilename = "fedavg-comparison-" + str(workers) + graph_type + ".pdf"
         if save_fig:
             plt.savefig(saveFilename, format="pdf")
         else:
             plt.show()
 
     if dataset == 'Darknet':
+
 
         if method == 'middle':
             L3_vals = [0.0, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5]
@@ -374,14 +388,15 @@ if __name__ == "__main__":
 
         mean_l, min_l, max_l, mean_a, min_a, max_a,  lenL3 = process_data(workers, L3_vals, graph_type=graph_type,
                                                                           method=method, resultFolder=resultFolder)
-        plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, plot_loss=plot_loss, save_fig=False)
+        plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, plot_loss=plot_loss, save_fig=True)
         if method == 'middle':
             results_bar_chart(mean_a, mean_l, save_fig=False)
 
         #'''
         # FedAvg Bar Chart
+        dir = 'Results/Darknet/FedAvgLarge/' + str(workers) + 'WorkerFC/FedAvg-'
         mean_l, _, _, mean_a, _, _, _ = process_data(16, L3_vals, graph_type='fully-connected', method='fedavg-large',
-                                                     resultFolder=resultFolder)
+                                                     resultFolder=dir)
         middle_mean_l, _, _, middle_mean_a, _, _, _ = process_data(16, L3_vals, graph_type='fully-connected',
                                                                    method='middle')
         mean_l = mean_l[-1][-1]
@@ -396,6 +411,7 @@ if __name__ == "__main__":
         middle_l3_3A = middle_mean_a[3][-1]
         save_fig = True
 
+        plt.clf()
         fig, ax = plt.subplots(figsize=(8, 6))
         ax2 = ax.twinx()
 
@@ -404,7 +420,7 @@ if __name__ == "__main__":
         params = np.array([347382, 0, 512, 512, 512])
         # log_params = np.where(params > 0, np.log(params), 0)
 
-        X = ['FedAvg', 'No Collaboration', r'MIDDLE $\lambda = 1/10$', r'MIDDLE $\lambda = 1/4$', r'MIDDLE $\lambda = 1/3$']
+        X = ['FedAvg', 'No Collaboration', r'MIDDLE $\lambda = 2/9$', r'MIDDLE $\lambda = 2/3$', r'MIDDLE $\lambda = 1$']
         X_axis = np.arange(len(X))
 
         na = ax2.bar(np.nan, np.nan, 0.5, label='Total Communicated \n Parameters', color='lightgreen')
@@ -465,7 +481,7 @@ if __name__ == "__main__":
         # ax.tight_layout()
         # for t in legend.get_texts():
         #     t.set_ha('center')
-        saveFilename = "fedavg-comparison.pdf"
+        saveFilename = "fedavg-comparison-16ring.pdf"
         if save_fig:
             plt.savefig(saveFilename, format="pdf")
         else:
