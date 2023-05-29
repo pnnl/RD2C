@@ -3,7 +3,6 @@ import numpy as np
 import sys
 import time
 import copy
-sys.path.append('../Decentralized-FL-Framework')
 from comm_weights import flatten_weights, unflatten_weights
 from tqdm import tqdm
 
@@ -11,7 +10,6 @@ from tqdm import tqdm
 def set_learning_rate(optimizer, epoch):
     if epoch >= 1:
         optimizer.lr = optimizer.lr * tf.math.exp(-0.1)
-
 
 def average_models(model, local_update, layer_shapes, layer_sizes, lam1, lam2, lam3):
     model_weights = model.get_weights()
@@ -59,9 +57,6 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
     coordination_x = tf.cast(coordination_x, dtype=tf.float32)
 
     for epoch in range(epochs):
-
-        # Adjust learning rate
-        # set_learning_rate(optimizer, epoch)
 
         record_time = 0
         comm_time = 0

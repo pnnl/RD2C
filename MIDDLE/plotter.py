@@ -114,6 +114,43 @@ def process_data(workers, L3_vals, epochs=50, coordination_size=128, graph_type=
 
     return mean_l, min_l, max_l, mean_a, min_a, max_a, len(L3_vals)
 
+
+def process_data_darknet(workers, L3_vals, epochs=50, coordination_size=128, graph_type='ring',
+                         resultFolder='Results/Darknet/', method='middle', runs=6):
+
+    # L3_vals = [0, 1. / 20, 1. / 10, 1./6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
+    # L3_vals = [0.0, 1. / 20, 1. / 10, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
+    plt.figure(1)
+    mean_l = []; min_l = []; max_l = []
+    mean_a = []; min_a = []; max_a = []
+
+    for ind, val in enumerate(range(len(L3_vals))):
+        y_loss = []
+        y_acc = []
+        L3 = L3_vals[val]
+
+        for run in range(1, runs):
+            if method == 'middle':
+                folder = resultFolder + str(run) + '-' + str(workers) + 'Worker-' + str(epochs) + 'Epochs-' + \
+                        str(L3) + 'L3Penalty-' + str(coordination_size) + 'Csize-' + str(graph_type)
+            elif method[:3] == 'fed':
+                folder = resultFolder + str(run) + '-' + str(workers) + 'Worker-' + str(epochs) + 'Epochs-' + \
+                         str(coordination_size) + 'Csize-' + str(graph_type)
+
+            test_loss_data = unpack_data(folder, epochs=epochs, num_workers=workers)
+            test_acc_data = unpack_data(folder, datatype='test-acc.log', epochs=epochs, num_workers=workers)
+            y_loss.append(test_loss_data.mean(axis=1))
+            y_acc.append(test_acc_data.mean(axis=1))
+
+        y_loss = np.stack(y_loss, axis=0)
+        y_acc = np.stack(y_acc, axis=0)
+        y_mean_l, y_min_l, y_max_l = generate_confidence_interval(y_loss)
+        y_mean_a, y_min_a, y_max_a = generate_confidence_interval(y_acc)
+        mean_l.append(y_mean_l); min_l.append(y_min_l); max_l.append(y_max_l)
+        mean_a.append(y_mean_a); min_a.append(y_min_a); max_a.append(y_max_a)
+
+    return mean_l, min_l, max_l, mean_a, min_a, max_a, len(L3_vals)
+
 def results_bar_chart(mean_accs, mean_losses, save_fig=True, dataset='Darknet'):
 
     m_len = len(mean_accs)
@@ -235,24 +272,27 @@ def plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, epochs=50, 
 
 if __name__ == "__main__":
 
-    plot_loss = False
+    plot_loss = True
     workers = 16
     graph_type = 'clique-ring'
     # dataset = 'Darknet'
-    # resultFolder = 'Results/Darknet/'
+    #resultFolder = 'Results/Darknet/'
     #method = 'fedavg-large'
 
     dataset = 'Cifar10'
     resultFolder = 'Results/Cifar10/New/'
     method = 'middle'
-    small_model = True
-    mixed_model = False
-    save_fig = True
+    small_model = False
+    mixed_model = True
+    save_fig = False
 
     if dataset == 'Cifar10':
 
         # L3_vals = [0.0, 0.2, 1./3]
         L3_vals = [0.0, 1./9, 0.2, 1./3]
+        if mixed_model:
+            resultFolder = 'Results/Cifar10/'
+            L3_vals = [0.0, 1./3]
 
         if small_model:
             if method == 'middle':
@@ -386,7 +426,7 @@ if __name__ == "__main__":
             elif graph_type == 'clique-ring':
                 resultFolder = resultFolder + 'FedAvgSmall/' + str(workers) + 'WorkerROC/FedAvg-'
 
-        mean_l, min_l, max_l, mean_a, min_a, max_a,  lenL3 = process_data(workers, L3_vals, graph_type=graph_type,
+        mean_l, min_l, max_l, mean_a, min_a, max_a,  lenL3 = process_data_darknet(workers, L3_vals, graph_type=graph_type,
                                                                           method=method, resultFolder=resultFolder)
         plot_acc_loss(mean_l, min_l, max_l, mean_a, min_a, max_a, lenL3, plot_loss=plot_loss, save_fig=True)
         if method == 'middle':
@@ -395,10 +435,11 @@ if __name__ == "__main__":
         #'''
         # FedAvg Bar Chart
         dir = 'Results/Darknet/FedAvgLarge/' + str(workers) + 'WorkerFC/FedAvg-'
-        mean_l, _, _, mean_a, _, _, _ = process_data(16, L3_vals, graph_type='fully-connected', method='fedavg-large',
+        dir2 = 'Results/Darknet/' + str(workers) + 'WorkerFC/MIDDLE-'
+        mean_l, _, _, mean_a, _, _, _ = process_data_darknet(16, L3_vals, graph_type='fully-connected', method='fedavg-large',
                                                      resultFolder=dir)
-        middle_mean_l, _, _, middle_mean_a, _, _, _ = process_data(16, L3_vals, graph_type='fully-connected',
-                                                                   method='middle')
+        middle_mean_l, _, _, middle_mean_a, _, _, _ = process_data_darknet(16, L3_vals, graph_type='fully-connected',
+                                                                           method='middle', resultFolder=dir2)
         mean_l = mean_l[-1][-1]
         mean_a = mean_a[-1][-1]
         middle_nol3_l = middle_mean_l[0][-1]
@@ -481,7 +522,7 @@ if __name__ == "__main__":
         # ax.tight_layout()
         # for t in legend.get_texts():
         #     t.set_ha('center')
-        saveFilename = "fedavg-comparison-16ring.pdf"
+        saveFilename = "fedavg-comparison-no-acc.pdf"
         if save_fig:
             plt.savefig(saveFilename, format="pdf")
         else:

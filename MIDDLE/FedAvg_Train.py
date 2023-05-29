@@ -2,7 +2,6 @@ import tensorflow as tf
 import sys
 import time
 import copy
-sys.path.append('../Decentralized-FL-Framework')
 from comm_weights import flatten_weights, unflatten_weights
 
 
@@ -52,7 +51,7 @@ def fedavg_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
     for epoch in range(epochs):
 
         # Adjust learning rate
-        set_learning_rate(optimizer, epoch)
+        # set_learning_rate(optimizer, epoch)
 
         record_time = 0
         comm_time = 0
