@@ -68,7 +68,7 @@ def run(rank, size):
         Network = Graph(rank, size, MPI.COMM_WORLD, graph_type)
         Communicator = DecentralizedSGD(rank, size, MPI.COMM_WORLD, Network, layer_shapes, layer_sizes, 0, 1)
 
-        # Synchronize all models so that initial models are the same
+        # Synchronize all Models so that initial Models are the same
         Communicator.model_sync(model)
 
     if rank == 0:

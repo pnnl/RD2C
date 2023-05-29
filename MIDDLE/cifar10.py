@@ -4,12 +4,12 @@ from six.moves import cPickle as pickle
 import os
 import platform
 from mpi4py import MPI
-from MIDDLE_Train import middle_train
-from communication import DecentralizedNoModelSGD
-from misc import Recorder
-from network import Graph
+from MIDDLE.Train.MIDDLE_Train import middle_train
+from MIDDLE.Utility.communication import DecentralizedNoModelSGD
+from MIDDLE.Utility.misc import Recorder
+from MIDDLE.Utility.network import Graph
 import argparse
-from models.resnet import ResNet18
+from Models.resnet import ResNet18
 tf.config.set_visible_devices([], 'GPU')
 
 def unpickle(file):
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     parser.add_argument('--lr', default=0.0001, type=float, help='learning rate')
     parser.add_argument('--epochs', '-e', default=20, type=int, help='total epochs')
     parser.add_argument('--bs', default=256, type=int, help='train batch size for each worker')
-    parser.add_argument('--multi_model', default=1, type=int, help='workers use different models during training')
+    parser.add_argument('--multi_model', default=1, type=int, help='workers use different Models during training')
     parser.add_argument('--coord_size', default=256, type=int, help='coordination dataset size')
     parser.add_argument('--L1', default=1., type=float, help='train set loss weighting')
     parser.add_argument('--L2', default=1., type=float, help='coordination set loss weighting')

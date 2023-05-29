@@ -5,7 +5,7 @@ import numpy as np
 
 def darknet_data(rank, size, train_pct, train_bs, test_bs, coordination_size):
     # read in CSV data
-    raw_df_data = pd.read_csv("Experiments/Darknet2020/Data/Darknet.CSV", parse_dates=["Timestamp"], on_bad_lines='skip')
+    raw_df_data = pd.read_csv("../Experiments/Darknet2020/Data/Darknet.CSV", parse_dates=["Timestamp"], on_bad_lines='skip')
 
     # make timestamp numeric (just time of day)
     timestamp = raw_df_data["Timestamp"]

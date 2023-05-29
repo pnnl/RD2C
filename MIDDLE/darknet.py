@@ -4,11 +4,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 import argparse
-from MIDDLE_Train import middle_train
-from dataloader import darknet_data
-from communication import DecentralizedNoModelSGD
-from misc import Recorder
-from network import Graph
+from MIDDLE.Train.MIDDLE_Train import middle_train
+from MIDDLE.Utility.dataloader import darknet_data
+from MIDDLE.Utility.communication import DecentralizedNoModelSGD
+from MIDDLE.Utility.misc import Recorder
+from MIDDLE.Utility.network import Graph
 import os
 import tikzplotlib
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'

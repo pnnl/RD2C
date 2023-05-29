@@ -4,12 +4,12 @@ from six.moves import cPickle as pickle
 import os
 import platform
 from mpi4py import MPI
-from FedAvg_Train import fedavg_train
-from communication import DecentralizedSGD
-from misc import Recorder
-from network import Graph
+from MIDDLE.Train.FedAvg_Train import fedavg_train
+from MIDDLE.Utility.communication import DecentralizedSGD
+from MIDDLE.Utility.misc import Recorder
+from MIDDLE.Utility.network import Graph
 import argparse
-from models.resnet import ResNet18
+from Models.resnet import ResNet18
 tf.config.set_visible_devices([], 'GPU')
 
 def unpickle(file):

@@ -33,11 +33,11 @@ def model_sync(model, layer_shapes, layer_sizes, size):
     # flatten tensor weights
     send_buffer = flatten_weights(model_weights)
     recv_buffer = np.zeros_like(send_buffer)
-    # perform all-reduce to synchronize initial models across all clients
+    # perform all-reduce to synchronize initial Models across all clients
     MPI.COMM_WORLD.Allreduce(send_buffer, recv_buffer, op=MPI.SUM)
     # divide by total workers to get average model
     recv_buffer = recv_buffer / size
-    # update local models
+    # update local Models
     new_weights = unflatten_weights(recv_buffer, layer_shapes, layer_sizes)
     model.set_weights(new_weights)
 

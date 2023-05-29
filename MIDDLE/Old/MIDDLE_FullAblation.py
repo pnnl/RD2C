@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     # Create MIDDLE model (same architecture and weights) for comparison
     initial_weights = middle_model.get_weights()
-    # middle_model_initial = tf.keras.models.clone_model(middle_model)
+    # middle_model_initial = tf.keras.Models.clone_model(middle_model)
 
     L1 = 1./3
     # L3_vals = [0, 1. / 10, 1. / 8, 1. / 6, 1. / 4, 1. / 3, 1. / 2, 3. / 5, 2. / 3]
@@ -193,4 +193,4 @@ if __name__ == "__main__":
 
             mpi.Barrier()
 
-            # middle_model = tf.keras.models.clone_model(middle_model_initial)
+            # middle_model = tf.keras.Models.clone_model(middle_model_initial)

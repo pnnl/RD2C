@@ -38,12 +38,12 @@ class DecentralizedSGD:
         # necessary preprocess
         self.prepare_comm_buffer(model)
 
-        # perform all-reduce to synchronize initial models across all clients
+        # perform all-reduce to synchronize initial Models across all clients
         MPI.COMM_WORLD.Allreduce(self.send_buffer, self.recv_buffer, op=MPI.SUM)
         # divide by total workers to get average model
         self.recv_buffer = self.recv_buffer / self.size
 
-        # update local models
+        # update local Models
         self.reset_model(model)
         return unflatten_weights(self.recv_buffer, self.layer_shapes, self.layer_sizes)
 
@@ -64,19 +64,19 @@ class DecentralizedSGD:
         # decentralized averaging
         for idx, node in enumerate(self.neighbor_list):
             self.comm.Sendrecv(sendbuf=self.send_buffer, source=node, recvbuf=self.recv_tmp, dest=node)
-            # Aggregate neighbors' models: alpha * sum_j x_j
+            # Aggregate neighbors' Models: alpha * sum_j x_j
             self.recv_buffer = np.add(self.recv_buffer, self.neighbor_weights[idx] * self.recv_tmp)
 
         self.comm.Barrier()
         toc = time.time()
 
-        # update local models
+        # update local Models
         self.reset_model(model)
 
         return toc - tic
 
     def reset_model(self, model):
-        # Reset local models to be the averaged model
+        # Reset local Models to be the averaged model
         new_weights = unflatten_weights(self.recv_buffer, self.layer_shapes, self.layer_sizes)
         model.set_weights(new_weights)
 
@@ -129,7 +129,7 @@ class DecentralizedNoModelSGD:
         # decentralized averaging
         for idx, node in enumerate(self.neighbor_list):
             self.comm.Sendrecv(sendbuf=predictions, source=node, recvbuf=recv_tmp, dest=node)
-            # Aggregate neighbors' models: alpha * sum_j x_j
+            # Aggregate neighbors' Models: alpha * sum_j x_j
             avg_predictions = np.add(avg_predictions, self.neighbor_weights[idx] * recv_tmp)
 
         self.comm.Barrier()
