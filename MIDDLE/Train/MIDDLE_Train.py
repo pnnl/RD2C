@@ -56,6 +56,9 @@ def middle_train(model, communicator, rank, lossF, optimizer, train_dataset, coo
 
     for epoch in range(epochs):
 
+        # Adjust learning rate
+        # set_learning_rate(optimizer, epoch)
+
         record_time = 0
         comm_time = 0
         non_comp = 0
